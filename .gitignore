@@ -21,3 +21,15 @@ Thumbs.db
 .vscode/
 .idea/
 *.suo
+
+# KOTLIN
+*.iml
+local.properties
+.gradle/
+*.apk
+*.aab
+*.ap_
+*.dex
+captures/
+.externalNativeBuild/
+.cxx/

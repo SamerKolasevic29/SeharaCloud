@@ -1,0 +1,23 @@
+# .NET
+bin/
+obj/
+*.user
+
+# C++
+build/
+*.o
+*.exe
+.dev
+
+# DB (PostgreSQL)
+appsettings.Production.json
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.suo

@@ -1,0 +1,27 @@
+# API Contract
+
+## GET /api/files/videos
+Returns video list.
+
+## GET /api/files/music
+Returns music list.
+
+## GET /api/files/images
+Returns image list.
+
+## GET /api/files/documents
+Returns document list.
+
+## GET /api/files/recent
+Returns last 20 recently added files.
+
+## GET /api/stream/{id}
+Streams file via HTTP Range Request support.
+
+## GET /api/thumbnails/{id}
+Returns thumbnail image.
+
+## GET /api/files/{file_type}/{term}
+Returns list of certain file type that contains that term in name
+
+## **BITNO JE DA TI BAR OVI RADE, LAGANO JE POSLIJE NADODAT JOS APIJA**

@@ -1,7 +1,5 @@
 namespace HomeCloud.Models;
 
-    using HomeCloud.Enums;
-    
     public class CloudFile
     {
         public Guid Id {get; set;}

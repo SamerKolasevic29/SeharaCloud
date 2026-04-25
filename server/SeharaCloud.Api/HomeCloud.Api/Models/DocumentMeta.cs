@@ -1,7 +1,5 @@
 namespace HomeCloud.Models;
 
-using HomeCloud.Enums;
-
 public class DocumentMeta
 {
     public Guid FileId { get; set; }

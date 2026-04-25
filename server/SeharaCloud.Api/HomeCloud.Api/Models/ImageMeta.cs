@@ -1,7 +1,4 @@
 namespace HomeCloud.Models;
-
-using HomeCloud.Enums;
-
 public class ImageMeta
 {
     public Guid FileId { get; set; }

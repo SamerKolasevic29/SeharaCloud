@@ -11,11 +11,11 @@ public interface IMusicRepository
 
     // -- Artist ------------------------
     Task<IEnumerable<ArtistDto>> GetArtistsAsync();
-    Task<IEnumerable<MusicDto>> GetArtistByIdAsync(Guid artistId);
+    Task<IEnumerable<MusicDto>> GetByArtistIdAsync(Guid artistId);
 
     // -- Genre ------------------------
     Task<IEnumerable<GenreDto>> GetGenresAsync();
-    Task<IEnumerable<MusicDto>> GetGenreByIdAsync(Guid genreId);
+    Task<IEnumerable<MusicDto>> GetByGenreIdAsync(Guid genreId);
 
     // -- Search ------------------------
     Task<IEnumerable<MusicDto>> SearchAsync(string query);

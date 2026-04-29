@@ -6,14 +6,14 @@ using System.Text.Json;
 using HomeCloud.Exceptions;
 
 
-public class ExceptionMidlleware
+public class ExceptionMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly ILogger<ExceptionMidlleware> _logger;
+    private readonly ILogger<ExceptionMiddleware> _logger;
 
     // _next is next middleware in chain
     // _logger iz built-in .NET _logger
-    public ExceptionMidlleware(RequestDelegate next, ILogger<ExceptionMidlleware> logger)
+    public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
     {
         _next = next;
         _logger = logger;

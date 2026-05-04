@@ -32,7 +32,7 @@ public class VideosController : ControllerBase
     [HttpGet("movies")]
     public async Task<IActionResult> GetMovies()
     {
-        var result = _service.GetMoviesAsync();
+        var result = await _service.GetMoviesAsync();
         return Ok(result);
     }
 

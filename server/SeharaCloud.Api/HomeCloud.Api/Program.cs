@@ -1,34 +1,49 @@
+using HomeCloud.Middleware;
+using HomeCloud.Repositories;
+using HomeCloud.Repositories.Interfaces;
+using HomeCloud.Services;
+using HomeCloud.Services.Interfaces;
+using Npgsql;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ── DB ───────────────────────────────────────────
+var connectionString = builder.Configuration
+    .GetConnectionString("DefaultConnection")!;
+
+builder.Services.AddNpgsqlDataSource(connectionString);
+
+// ── Repozitories ───────────────────────────────────
+builder.Services.AddScoped<IMusicRepository, MusicRepository>();
+builder.Services.AddScoped<IVideoRepository, VideoRepository>();
+builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
+builder.Services.AddScoped<IImageRepository, ImageRepository>();
+builder.Services.AddScoped<IStreamRepository, StreamRepository>();
+
+// ── Services ────────────────────────────────────────
+builder.Services.AddScoped<IMusicService, MusicService>();
+builder.Services.AddScoped<IVideoService, VideoService>();
+builder.Services.AddScoped<IDocumentService, DocumentService>();
+builder.Services.AddScoped<IImageService, ImageService>();
+builder.Services.AddScoped<IStreamService, StreamService>();
+
+// ── API ────────────────────────────────────────────
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ── Middleware pipeline ────────────────────────────
+app.UseMiddleware<ExceptionMiddleware>();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseHttpsRedirection();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-});
+app.MapControllers();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

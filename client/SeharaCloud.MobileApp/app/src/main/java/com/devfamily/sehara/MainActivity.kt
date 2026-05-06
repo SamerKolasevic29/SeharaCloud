@@ -7,10 +7,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import com.devfamily.sehara.ui.screens.home.HomeScreen
+import com.devfamily.sehara.ui.screens.landing.LandingScreen
 import com.devfamily.sehara.ui.theme.SeharaTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,29 +22,19 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             SeharaTheme {
+                var showLanding by remember { mutableStateOf(true) }
+
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    if (showLanding) {
+                        LandingScreen(
+                            modifier = Modifier.padding(innerPadding),
+                            onTimeout = { showLanding = false }
+                        )
+                    } else {
+                        HomeScreen(modifier = Modifier.padding(innerPadding))
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    SeharaTheme {
-        Greeting("Android")
     }
 }

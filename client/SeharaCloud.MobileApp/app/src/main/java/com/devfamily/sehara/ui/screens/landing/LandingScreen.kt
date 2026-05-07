@@ -70,7 +70,7 @@ fun LandingScreen(
                     painter = painterResource(id = R.drawable.ic_logo),
                     contentDescription = null,
                     modifier = Modifier.size(68.dp),
-                    colorFilter = ColorFilter.tint(Color.White)
+                    colorFilter = ColorFilter.tint(Color.LightGray)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(

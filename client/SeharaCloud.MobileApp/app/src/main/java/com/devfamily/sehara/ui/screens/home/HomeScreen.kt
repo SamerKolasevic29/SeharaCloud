@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.devfamily.sehara.R
 import com.devfamily.sehara.ui.components.CategoryCard
+import androidx.compose.material3.MaterialTheme
 
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier) {
@@ -54,8 +55,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                 Text(
                     text = "Sehara",
                     color = Color(0xFF8E8D8D),
-                    fontSize = 42.sp,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.displayMedium
                 )
             }
 
@@ -110,9 +110,11 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .padding(bottom = 40.dp)
                     .fillMaxWidth(0.4f)
+                    .height(46.dp)
                     .align(Alignment.CenterHorizontally),
                 shape = RoundedCornerShape(150.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9F001E))
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9F001E)),
+
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.ic_exit),
@@ -124,8 +126,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                 Text(
                     text = "Exit",
                     color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
+                    style= MaterialTheme.typography.titleSmall
                 )
             }
         }

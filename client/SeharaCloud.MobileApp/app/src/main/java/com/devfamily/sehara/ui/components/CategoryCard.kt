@@ -23,14 +23,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-
 @Composable
 fun CategoryCard(
     modifier: Modifier = Modifier,
     backgroundImage: Int,
-    icon: Int,
     label: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    bottomStartContent: @Composable (() -> Unit)? = null
 ) {
     Box(
         modifier = modifier
@@ -43,24 +42,30 @@ fun CategoryCard(
             contentScale = ContentScale.FillBounds,
             modifier = Modifier.fillMaxSize()
         )
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(start = 12.dp, end = 12.dp, bottom = 14.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Image(
-                painter = painterResource(id = icon),
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                colorFilter = ColorFilter.tint(Color.White)
-            )
+        if (bottomStartContent != null) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(start = 12.dp, end = 12.dp, bottom = 14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                bottomStartContent.invoke()
+                Text(
+                    text = label,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
+        } else {
             Text(
                 text = label,
                 color = Color.White,
-                style= MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 14.dp)
             )
         }
     }

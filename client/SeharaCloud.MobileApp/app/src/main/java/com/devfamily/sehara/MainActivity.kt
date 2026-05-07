@@ -15,25 +15,14 @@ import androidx.compose.ui.Modifier
 import com.devfamily.sehara.ui.screens.home.HomeScreen
 import com.devfamily.sehara.ui.screens.landing.LandingScreen
 import com.devfamily.sehara.ui.theme.SeharaTheme
+import com.devfamily.sehara.ui.navigation.AppNavigation
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
             SeharaTheme {
-                var showLanding by remember { mutableStateOf(true) }
-
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    if (showLanding) {
-                        LandingScreen(
-                            modifier = Modifier.padding(innerPadding),
-                            onTimeout = { showLanding = false }
-                        )
-                    } else {
-                        HomeScreen(modifier = Modifier.padding(innerPadding))
-                    }
-                }
+                AppNavigation()
             }
         }
     }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,23 +25,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.devfamily.sehara.R
 import com.devfamily.sehara.ui.components.CategoryCard
-import androidx.compose.material3.MaterialTheme
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
+fun HomeScreen(
+    modifier: Modifier = Modifier,
+    onMusicClick: () -> Unit
+) {
     val context = LocalContext.current
 
-    Box(
-        modifier = modifier.fillMaxSize()
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier.padding(start = 24.dp, top = 50.dp, end = 24.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -68,16 +65,30 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                 CategoryCard(
                     modifier = Modifier.weight(1f).padding(end = 4.dp),
                     backgroundImage = R.drawable.home_video_card,
-                    icon = R.drawable.ic_video,
                     label = "Video",
-                    onClick = {}
+                    onClick = {},
+                    bottomStartContent = {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_video),
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            colorFilter = ColorFilter.tint(Color.White)
+                        )
+                    }
                 )
                 CategoryCard(
                     modifier = Modifier.weight(1f).padding(start = 4.dp),
                     backgroundImage = R.drawable.home_music_card,
-                    icon = R.drawable.ic_music,
                     label = "Music",
-                    onClick = {}
+                    onClick = onMusicClick,
+                    bottomStartContent = {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_music),
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            colorFilter = ColorFilter.tint(Color.White)
+                        )
+                    }
                 )
             }
 
@@ -90,16 +101,30 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                 CategoryCard(
                     modifier = Modifier.weight(1f).padding(end = 4.dp),
                     backgroundImage = R.drawable.home_photo_card,
-                    icon = R.drawable.ic_photo,
                     label = "Photo",
-                    onClick = {}
+                    onClick = {},
+                    bottomStartContent = {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_photo),
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            colorFilter = ColorFilter.tint(Color.White)
+                        )
+                    }
                 )
-                CategoryCard (
+                CategoryCard(
                     modifier = Modifier.weight(1f).padding(start = 4.dp),
                     backgroundImage = R.drawable.home_docs_card,
-                    icon = R.drawable.ic_docs,
                     label = "Docs",
-                    onClick = {}
+                    onClick = {},
+                    bottomStartContent = {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_docs),
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            colorFilter = ColorFilter.tint(Color.White)
+                        )
+                    }
                 )
             }
 
@@ -113,8 +138,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                     .height(46.dp)
                     .align(Alignment.CenterHorizontally),
                 shape = RoundedCornerShape(150.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9F001E)),
-
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9F001E))
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.ic_exit),
@@ -126,7 +150,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                 Text(
                     text = "Exit",
                     color = Color.White,
-                    style= MaterialTheme.typography.titleSmall
+                    style = MaterialTheme.typography.titleSmall
                 )
             }
         }

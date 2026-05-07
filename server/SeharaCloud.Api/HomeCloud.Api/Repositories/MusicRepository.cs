@@ -72,27 +72,25 @@ public class MusicRepository : IMusicRepository
     }
 
     public async Task<IEnumerable<ArtistDto>> GetArtistsAsync()
-    {
-        using var conn = await _dataSource.OpenConnectionAsync();
-        var sql = $"""
-            SELECT
-                a.id                        AS Id,
-                a.name                      AS Name,
-                CASE
-                    WHEN a.thumbnail_url IS NOT NULL
-                    THEN '{_baseUrl}/api/thumbnail/' || 
-                         (SELECT f.id::text FROM files f 
-                          WHERE f.thumbnail_path = a.thumbnail_url LIMIT 1)
-                    ELSE NULL
-                END                         AS ThumbnailUrl,
-                COUNT(m.file_id)            AS SongCount
-            FROM artists a
-            LEFT JOIN music_meta m ON a.id = m.artist_id
-            GROUP BY a.id, a.name, a.thumbnail_url
-            ORDER BY a.name
-            """;
-        return await conn.QueryAsync<ArtistDto>(sql);
-    }
+{
+    using var conn = await _dataSource.OpenConnectionAsync();
+    var sql = $"""
+        SELECT
+            a.id                AS Id,
+            a.name              AS Name,
+            CASE
+                WHEN a.thumbnail_path IS NOT NULL
+                THEN '{_baseUrl}/api/thumbnail/' || a.id::text
+                ELSE NULL
+            END                 AS ThumbnailUrl,
+            COUNT(m.file_id)    AS SongCount
+        FROM artists a
+        LEFT JOIN music_meta m ON a.id = m.artist_id
+        GROUP BY a.id, a.name, a.thumbnail_path
+        ORDER BY a.name
+        """;
+    return await conn.QueryAsync<ArtistDto>(sql);
+}
 
     public async Task<IEnumerable<MusicDto>> GetByArtistIdAsync(Guid artistId)
     {
@@ -118,21 +116,25 @@ public class MusicRepository : IMusicRepository
     }
 
     public async Task<IEnumerable<GenreDto>> GetGenresAsync()
-    {
-        using var conn = await _dataSource.OpenConnectionAsync();
-        const string sql = """
-            SELECT
-                g.id            AS Id,
-                g.name          AS Name,
-                g.thumbnail_url AS ThumbnailUrl,
-                COUNT(m.file_id) AS SongCount
-            FROM genres g
-            LEFT JOIN music_meta m ON g.id = m.genre_id
-            GROUP BY g.id, g.name, g.thumbnail_url
-            ORDER BY g.name
-            """;
-        return await conn.QueryAsync<GenreDto>(sql);
-    }
+{
+    using var conn = await _dataSource.OpenConnectionAsync();
+    var sql = $"""
+        SELECT
+            g.id                AS Id,
+            g.name              AS Name,
+            CASE
+                WHEN g.thumbnail_path IS NOT NULL
+                THEN '{_baseUrl}/api/thumbnail/' || g.id::text
+                ELSE NULL
+            END                 AS ThumbnailUrl,
+            COUNT(m.file_id)    AS SongCount
+        FROM genres g
+        LEFT JOIN music_meta m ON g.id = m.genre_id
+        GROUP BY g.id, g.name, g.thumbnail_path
+        ORDER BY g.name
+        """;
+    return await conn.QueryAsync<GenreDto>(sql);
+}
 
     public async Task<IEnumerable<MusicDto>> GetByGenreIdAsync(Guid genreId)
     {

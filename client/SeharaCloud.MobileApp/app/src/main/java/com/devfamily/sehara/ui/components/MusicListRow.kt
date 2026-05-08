@@ -23,6 +23,9 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.devfamily.sehara.R
 import com.devfamily.sehara.data.FileItem
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 
 @Composable
 fun MusicListRow(item: FileItem, onClick: () -> Unit = {}) {
@@ -35,10 +38,18 @@ fun MusicListRow(item: FileItem, onClick: () -> Unit = {}) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start
     ) {
+        val imageModel = remember(item.thumbnailUrl, item.id) {
+            if (!item.thumbnailUrl.isNullOrEmpty()) {
+                item.thumbnailUrl
+            } else {
+                null
+            }
+        }
+
         AsyncImage(
-            model = if (item.thumbnailUrl != null) "http://192.168.100.79:5000/api/thumbnails/${item.id}" else null,
+            model = imageModel,
             contentDescription = null,
-            modifier = Modifier.size(40.dp),
+            modifier = Modifier.size(40.dp).clip(CircleShape),
             contentScale = ContentScale.Crop,
             error = painterResource(id = R.drawable.ic_unknown),
             placeholder = painterResource(id = R.drawable.ic_unknown),

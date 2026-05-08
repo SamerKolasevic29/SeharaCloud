@@ -15,7 +15,6 @@ val LexendExa = FontFamily(
 
 // Set of Material typography styles to start with
 val Typography = Typography(
-    // 54sp - Najveći naslov
     displayLarge = TextStyle(
         fontFamily = LexendExa,
         fontWeight = FontWeight.SemiBold,

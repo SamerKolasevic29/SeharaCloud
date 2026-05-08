@@ -7,6 +7,7 @@ import com.devfamily.sehara.data.RetrofitClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.asStateFlow
 
 class MusicViewModel : ViewModel() {
 
@@ -18,6 +19,29 @@ class MusicViewModel : ViewModel() {
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
+
+    private val _searchResults = MutableStateFlow<List<FileItem>>(emptyList())
+    val searchResults: StateFlow<List<FileItem>> = _searchResults.asStateFlow()
+
+    private val _isSearching = MutableStateFlow(false)
+    val isSearching: StateFlow<Boolean> = _isSearching.asStateFlow()
+
+    fun searchMusic(query: String) {
+        viewModelScope.launch {
+            _isSearching.value = true
+            try {
+                _searchResults.value = RetrofitClient.instance.searchMusic(query)
+            } catch (e: Exception) {
+                _searchResults.value = emptyList()
+            } finally {
+                _isSearching.value = false
+            }
+        }
+    }
+
+    fun clearSearch() {
+        _searchResults.value = emptyList()
+    }
 
     init {
         fetchMusic()

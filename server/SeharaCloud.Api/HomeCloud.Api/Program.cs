@@ -19,6 +19,7 @@ builder.Services.AddScoped<IVideoRepository, VideoRepository>();
 builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
 builder.Services.AddScoped<IImageRepository, ImageRepository>();
 builder.Services.AddScoped<IStreamRepository, StreamRepository>();
+builder.Services.AddScoped<IThumbnailRepository, ThumbnailRepository>();
 
 // ── Services ────────────────────────────────────────
 builder.Services.AddScoped<IMusicService, MusicService>();
@@ -26,6 +27,7 @@ builder.Services.AddScoped<IVideoService, VideoService>();
 builder.Services.AddScoped<IDocumentService, DocumentService>();
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IStreamService, StreamService>();
+builder.Services.AddScoped<IThumbnailService, ThumbnailService>();
 
 // ── API ────────────────────────────────────────────
 builder.Services.AddControllers();

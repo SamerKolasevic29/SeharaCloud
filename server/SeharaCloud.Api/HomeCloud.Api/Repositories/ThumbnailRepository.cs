@@ -13,12 +13,18 @@ public class ThumbnailRepository : IThumbnailRepository
         _dataSource = dataSource;
     }
 
-    public async Task<string?> GetThumbnailPathAsync(Guid fileId)
+    public async Task<string?> GetThumbnailPathAsync(Guid id)
     {
         using var conn = await _dataSource.OpenConnectionAsync();
         return await conn.QueryFirstOrDefaultAsync<string>(
-            "SELECT thumbnail_path FROM files WHERE id = @Id",
-            new { Id = fileId }
+           @"SELECT thumbnail_path FROM files WHERE id = @Id
+             UNION ALL
+             SELECT thumbnail_path FROM artists WHERE id = @Id
+             UNION ALL
+             SELECT thumbnail_path FROM genres WHERE id = @Id
+             LIMIT 1",
+            new { Id = id }
         );
     }
+
 }

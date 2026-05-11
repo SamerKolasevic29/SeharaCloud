@@ -46,7 +46,7 @@ struct DocumentData {
 struct FileRecord {
     std::string path;
     std::string filename;
-    std::string filetype; // video | music | image | document
+    std::string fileType; // video | music | image | document
     std::string mimeType;
     long long   sizeBytes = 0;
     std::string thumbnailPath;
@@ -86,7 +86,7 @@ private:
 
     //Helper methods - insertFile calls them
     std::string insertOrGetArtist(pqxx::work& txn, const std::string& name);
-    std::string insertOrGetArtist(pqxx::work& txn, const std::string& name);
+    std::string insertOrGetGenre (pqxx::work& txn, const std::string& name);
 
     void insertMusicMeta   (pqxx::work& txn, const std::string& fileId, const MusicData& d);
     void insertVideoMeta   (pqxx::work& txn, const std::string& fileId, const VideoData& d);

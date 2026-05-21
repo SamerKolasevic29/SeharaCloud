@@ -32,7 +32,7 @@ fun LandingScreen(
     modifier: Modifier = Modifier
 ) {
     LaunchedEffect(Unit) {
-        delay(2500)
+        delay(1000)
         onTimeout()
     }
 

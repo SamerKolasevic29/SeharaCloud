@@ -8,6 +8,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.asStateFlow
+import retrofit2.HttpException
+import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
 
 class MusicViewModel : ViewModel() {
 
@@ -54,10 +58,20 @@ class MusicViewModel : ViewModel() {
                 _musicList.value = RetrofitClient.instance.getMusic()
                 _error.value = null
             } catch (e: Exception) {
-                _error.value = e.message
+                _error.value = e.toUserMessage()
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+}
+
+fun Throwable.toUserMessage(): String {
+    return when (this) {
+        is ConnectException -> "Unable to connect to the server. Please check your internet connection."
+        is SocketTimeoutException -> "The server is taking too long to respond. Please try again later."
+        is HttpException -> "Server error (${this.code()}). Please try again."
+        is IOException -> "Network issue. Please verify your connection."
+        else -> "An unexpected error occurred. Please try again."
     }
 }

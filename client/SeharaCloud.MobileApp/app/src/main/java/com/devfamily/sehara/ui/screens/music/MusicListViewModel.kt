@@ -30,7 +30,7 @@ class MusicListViewModel : ViewModel() {
                 }
                 _error.value = null
             } catch (e: Exception) {
-                _error.value = e.message
+                _error.value = e.toUserMessage()
             } finally {
                 _isLoading.value = false
             }

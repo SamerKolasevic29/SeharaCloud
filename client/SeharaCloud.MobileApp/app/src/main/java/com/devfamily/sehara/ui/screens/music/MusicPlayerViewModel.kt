@@ -55,14 +55,17 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
 
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_ENDED) {
-                    _isPlaying.value = false
-                    _currentPosition.value = 0L
-                    exoPlayer.seekTo(0)
-                    exoPlayer.pause()
+                    if (hasNext) {
+                        skipNext()
+                    } else {
+                        _isPlaying.value = false
+                        _currentPosition.value = 0L
+                        exoPlayer.seekTo(0)
+                        exoPlayer.pause()
+                    }
                 }
             }
         })
-
         viewModelScope.launch {
             while (true) {
                 delay(1000L)
@@ -94,6 +97,7 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
         exoPlayer.play()
+        _isPlaying.value = true
     }
 
     fun loadSongFromQueue(item: FileItem, queueList: List<FileItem>) {

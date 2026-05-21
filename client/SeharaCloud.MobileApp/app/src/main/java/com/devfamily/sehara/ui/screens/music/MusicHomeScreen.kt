@@ -51,6 +51,8 @@ import com.devfamily.sehara.ui.components.SearchBar
 import kotlinx.coroutines.delay
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 
 @Composable
 fun MusicHomeScreen(
@@ -87,7 +89,7 @@ fun MusicHomeScreen(
 
     LaunchedEffect(Unit) {
         if (showInitialSplash) {
-            delay(1000)
+            delay(500)
             showSplash = false
         } else {
             showSplash = false
@@ -102,6 +104,7 @@ fun MusicHomeScreen(
             viewModel.searchMusic(searchQuery)
         }
     }
+
 
     AnimatedContent(
         targetState = showSplash,

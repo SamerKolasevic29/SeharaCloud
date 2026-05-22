@@ -16,6 +16,8 @@ import com.devfamily.sehara.ui.screens.music.MusicFilter
 import com.devfamily.sehara.ui.screens.music.MusicHomeScreen
 import com.devfamily.sehara.ui.screens.music.MusicListScreen
 import com.devfamily.sehara.ui.screens.music.MusicPlayerViewModel
+import com.devfamily.sehara.ui.screens.video.VideoHomeScreen
+import com.devfamily.sehara.ui.screens.video.movieScreen
 
 @Composable
 fun AppNavigation() {
@@ -40,7 +42,8 @@ fun AppNavigation() {
             HomeScreen(
                 onMusicClick = {
                     navController.navigate(Routes.Music.route)
-                }
+                },
+                onVideoClick = { navController.navigate(Routes.Video.route) }
             )
         }
 
@@ -50,6 +53,21 @@ fun AppNavigation() {
                 onArtistClick = { navController.navigate(Routes.Artist.route) },
                 onGenreClick = { navController.navigate(Routes.Genre.route) },
                 playerViewModel = playerViewModel
+            )
+        }
+
+        composable(Routes.Video.route) {
+            VideoHomeScreen(
+                onBackClick = { navController.popBackStack() },
+                onMovieClick = { navController.navigate(Routes.Movie.route) },
+                onOtherClick = { },
+                onDocumentaryClick = { }
+            )
+        }
+
+        composable(Routes.Movie.route) {
+            movieScreen(
+                onBackClick = { navController.popBackStack() }
             )
         }
 
@@ -63,6 +81,7 @@ fun AppNavigation() {
                 playerViewModel = playerViewModel
             )
         }
+
         composable(Routes.Genre.route) {
             GenreScreen(
                 showInitialSplash = true,

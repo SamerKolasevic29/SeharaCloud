@@ -13,5 +13,6 @@ sealed class Routes(val route: String) {
     }
     object Photo : Routes("photo")
     object Video : Routes("video")
+    object Movie : Routes("movie")
     object Docs : Routes("docs")
 }

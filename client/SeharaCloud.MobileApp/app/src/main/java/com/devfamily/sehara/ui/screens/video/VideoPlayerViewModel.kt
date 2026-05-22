@@ -1,4 +1,4 @@
-package com.devfamily.sehara.ui.screens.music
+package com.devfamily.sehara.ui.screens.video
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import com.devfamily.sehara.data.SongItem
+import com.devfamily.sehara.data.VideoItem
 import com.devfamily.sehara.data.RetrofitClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,18 +14,22 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-data class SongUiModel(
+enum class VideoPlayerMode {
+    HIDDEN, FLOATING, FULLSCREEN
+}
+
+data class VideoUiModel(
     val id: String = "",
     val title: String = "Unknown Title",
-    val artist: String = "Unknown Artist",
+    val category: String = "other",
     val durationMs: Long = 0L,
-    val thumbnailUrl: String?=null
+    val thumbnailUrl: String? = null
 )
 
-class MusicPlayerViewModel(application: Application) : AndroidViewModel(application) {
+class VideoPlayerViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _currentSong = MutableStateFlow(SongUiModel())
-    val currentSong: StateFlow<SongUiModel> = _currentSong.asStateFlow()
+    private val _currentVideo = MutableStateFlow(VideoUiModel())
+    val currentVideo: StateFlow<VideoUiModel> = _currentVideo.asStateFlow()
 
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
@@ -33,19 +37,22 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
     private val _currentPosition = MutableStateFlow(0L)
     val currentPosition: StateFlow<Long> = _currentPosition.asStateFlow()
 
+    private val _playerMode = MutableStateFlow(VideoPlayerMode.HIDDEN)
+    val playerMode: StateFlow<VideoPlayerMode> = _playerMode.asStateFlow()
+
     private val _hasPrevious = MutableStateFlow(false)
     val hasPreviousFlow: StateFlow<Boolean> = _hasPrevious.asStateFlow()
 
     private val _hasNext = MutableStateFlow(false)
     val hasNextFlow: StateFlow<Boolean> = _hasNext.asStateFlow()
 
-    private var queue: List<SongItem> = emptyList()
+    private var queue: List<VideoItem> = emptyList()
     private var currentQueueIndex: Int = -1
 
     val hasPrevious: Boolean get() = currentQueueIndex > 0
     val hasNext: Boolean get() = currentQueueIndex < queue.size - 1
 
-    private val exoPlayer: ExoPlayer = ExoPlayer.Builder(application).build()
+    val exoPlayer: ExoPlayer = ExoPlayer.Builder(application).build()
 
     init {
         exoPlayer.addListener(object : Player.Listener {
@@ -66,52 +73,43 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
                 }
             }
         })
+
         viewModelScope.launch {
             while (true) {
-                delay(1000L)
+                delay(500L)
                 if (exoPlayer.isPlaying || exoPlayer.duration > 0L) {
                     _currentPosition.value = exoPlayer.currentPosition
                     val exoDuration = exoPlayer.duration
-                    if (exoDuration > 0L && _currentSong.value.durationMs <= 0L) {
-                        _currentSong.value = _currentSong.value.copy(durationMs = exoDuration)
+                    if (exoDuration > 0L && _currentVideo.value.durationMs <= 0L) {
+                        _currentVideo.value = _currentVideo.value.copy(durationMs = exoDuration)
                     }
                 }
             }
         }
     }
 
-    fun loadSong(songId: String, title: String, artist: String, durationMs: Long, thumbnailUrl: String? = null) {
-        if (_currentSong.value.id == songId && exoPlayer.playbackState != Player.STATE_IDLE) return
+    fun loadVideo(item: VideoItem, queueList: List<VideoItem>) {
+        queue = queueList
+        currentQueueIndex = queueList.indexOfFirst { it.id == item.id }
+        _hasPrevious.value = currentQueueIndex > 0
+        _hasNext.value = currentQueueIndex < queue.size - 1
 
-        _currentSong.value = SongUiModel(
-            id = songId,
-            title = title,
-            artist = artist,
-            durationMs = durationMs,
-            thumbnailUrl=thumbnailUrl
+        _currentVideo.value = VideoUiModel(
+            id = item.id,
+            title = if (item.title.isBlank()) item.filename else item.title,
+            category = item.category,
+            durationMs = (item.durationSec ?: 0) * 1000L,
+            thumbnailUrl = item.thumbnailUrl
         )
         _currentPosition.value = 0L
 
-        val streamUrl = "${RetrofitClient.BASE_URL}api/stream/$songId"
+        val streamUrl = "${RetrofitClient.BASE_URL}api/stream/${item.id}"
         val mediaItem = MediaItem.fromUri(streamUrl)
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
         exoPlayer.play()
         _isPlaying.value = true
-    }
-
-    fun loadSongFromQueue(item: SongItem, queueList: List<SongItem>) {
-        queue = queueList
-        currentQueueIndex = queueList.indexOfFirst { it.id == item.id }
-        _hasPrevious.value = currentQueueIndex > 0
-        _hasNext.value = currentQueueIndex < queue.size - 1
-        loadSong(
-            item.id,
-            item.title ?: item.filename,
-            item.artist ?: "Unknown Artist",
-            (item.durationSec ?: 0) * 1000L,
-            item.thumbnailUrl
-        )
+        _playerMode.value = VideoPlayerMode.FULLSCREEN
     }
 
     fun skipNext() {
@@ -120,13 +118,7 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
             val item = queue[currentQueueIndex]
             _hasPrevious.value = currentQueueIndex > 0
             _hasNext.value = currentQueueIndex < queue.size - 1
-            loadSong(
-                item.id,
-                item.title ?: item.filename,
-                item.artist ?: "Unknown Artist",
-                (item.durationSec ?: 0) * 1000L,
-                item.thumbnailUrl
-            )
+            loadVideo(item, queue)
         }
     }
 
@@ -136,37 +128,32 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
             val item = queue[currentQueueIndex]
             _hasPrevious.value = currentQueueIndex > 0
             _hasNext.value = currentQueueIndex < queue.size - 1
-            loadSong(
-                item.id,
-                item.title ?: item.filename,
-                item.artist ?: "Unknown Artist",
-                (item.durationSec ?: 0) * 1000L,
-                item.thumbnailUrl
-            )
+            loadVideo(item, queue)
         }
-    }
-
-    fun closePlayer() {
-        exoPlayer.stop()
-        exoPlayer.clearMediaItems()
-        _currentSong.value = SongUiModel()
-        _currentPosition.value = 0L
-        _isPlaying.value = false
-        queue = emptyList()
-        currentQueueIndex = -1
     }
 
     fun togglePlayPause() {
-        if (exoPlayer.isPlaying) {
-            exoPlayer.pause()
-        } else {
-            exoPlayer.play()
-        }
+        if (exoPlayer.isPlaying) exoPlayer.pause() else exoPlayer.play()
     }
 
     fun seekTo(position: Long) {
         exoPlayer.seekTo(position)
         _currentPosition.value = position
+    }
+
+    fun setMode(mode: VideoPlayerMode) {
+        _playerMode.value = mode
+    }
+
+    fun closePlayer() {
+        exoPlayer.stop()
+        exoPlayer.clearMediaItems()
+        _currentVideo.value = VideoUiModel()
+        _currentPosition.value = 0L
+        _isPlaying.value = false
+        _playerMode.value = VideoPlayerMode.HIDDEN
+        queue = emptyList()
+        currentQueueIndex = -1
     }
 
     fun formatTime(ms: Long): String {

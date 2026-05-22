@@ -2,7 +2,7 @@ package com.devfamily.sehara.ui.screens.music
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devfamily.sehara.data.FileItem
+import com.devfamily.sehara.data.SongItem
 import com.devfamily.sehara.data.RetrofitClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,8 +15,8 @@ import java.net.SocketTimeoutException
 
 class MusicViewModel : ViewModel() {
 
-    private val _musicList = MutableStateFlow<List<FileItem>>(emptyList())
-    val musicList: StateFlow<List<FileItem>> = _musicList
+    private val _musicList = MutableStateFlow<List<SongItem>>(emptyList())
+    val musicList: StateFlow<List<SongItem>> = _musicList
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -24,8 +24,8 @@ class MusicViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
-    private val _searchResults = MutableStateFlow<List<FileItem>>(emptyList())
-    val searchResults: StateFlow<List<FileItem>> = _searchResults.asStateFlow()
+    private val _searchResults = MutableStateFlow<List<SongItem>>(emptyList())
+    val searchResults: StateFlow<List<SongItem>> = _searchResults.asStateFlow()
 
     private val _isSearching = MutableStateFlow(false)
     val isSearching: StateFlow<Boolean> = _isSearching.asStateFlow()

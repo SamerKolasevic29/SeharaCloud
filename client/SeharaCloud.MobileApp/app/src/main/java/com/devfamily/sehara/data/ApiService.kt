@@ -7,77 +7,77 @@ import retrofit2.http.Query
 interface ApiService {
 
     @GET("api/music")
-    suspend fun getMusic(): List<FileItem>
+    suspend fun getMusic(): List<SongItem>
 
     @GET("api/music/recent")
-    suspend fun getRecentMusic(): List<FileItem>
+    suspend fun getRecentMusic(): List<SongItem>
 
     @GET("api/music/artists")
     suspend fun getArtists(): List<ArtistItem>
 
     @GET("api/music/artists/{artist}")
-    suspend fun getMusicByArtist(@Path("artist") artist: String): List<FileItem>
+    suspend fun getMusicByArtist(@Path("artist") artist: String): List<SongItem>
     @GET("api/music/genres")
     suspend fun getGenres(): List<GenreItem>
 
     @GET("api/music/genres/{genre}")
-    suspend fun getMusicByGenre(@Path("genre") genre: String): List<FileItem>
+    suspend fun getMusicByGenre(@Path("genre") genre: String): List<SongItem>
 
     @GET("api/music/search")
-    suspend fun searchMusic(@Query("q") term: String): List<FileItem>
+    suspend fun searchMusic(@Query("q") term: String): List<SongItem>
     @GET("api/music/artists/search")
     suspend fun searchArtists(@Query("q") term: String): List<ArtistItem>
 
     @GET("api/videos")
-    suspend fun getVideos(): List<FileItem>
+    suspend fun getVideos(): List<VideoItem>
 
     @GET("api/videos/recent")
-    suspend fun getRecentVideos(): List<FileItem>
+    suspend fun getRecentVideos(): List<VideoItem>
 
     @GET("api/videos/movies")
-    suspend fun getMovies(): List<FileItem>
+    suspend fun getMovies(): List<VideoItem>
 
     @GET("api/videos/movies/search")
-    suspend fun searchMovies(@Query("q") term: String): List<FileItem>
+    suspend fun searchMovies(@Query("q") term: String): List<VideoItem>
 
     @GET("api/videos/documentaries")
-    suspend fun getDocumentaries(): List<FileItem>
+    suspend fun getDocumentaries(): List<VideoItem>
 
     @GET("api/videos/documentaries/search")
-    suspend fun searchDocumentaries(@Query("q") term: String): List<FileItem>
+    suspend fun searchDocumentaries(@Query("q") term: String): List<VideoItem>
 
     @GET("api/videos/other")
-    suspend fun getOtherVideos(): List<FileItem>
+    suspend fun getOtherVideos(): List<VideoItem>
 
     @GET("api/videos/search")
-    suspend fun searchVideos(@Query("q") term: String): List<FileItem>
+    suspend fun searchVideos(@Query("q") term: String): List<VideoItem>
 
     @GET("api/photos")
-    suspend fun getImages(): List<FileItem>
+    suspend fun getImages(): List<SongItem>
 
     @GET("api/photos/{id}")
-    suspend fun getImageById(@Path("id") id: String): FileItem
+    suspend fun getImageById(@Path("id") id: String): SongItem
 
     @GET("api/docs")
-    suspend fun getDocuments(): List<FileItem>
+    suspend fun getDocuments(): List<SongItem>
 
     @GET("api/docs/books")
-    suspend fun getBooks(): List<FileItem>
+    suspend fun getBooks(): List<SongItem>
 
     @GET("api/docs/books/search")
-    suspend fun searchBooks(@Query("q") term: String): List<FileItem>
+    suspend fun searchBooks(@Query("q") term: String): List<SongItem>
 
     @GET("api/docs/documents")
-    suspend fun getStandardDocuments(): List<FileItem>
+    suspend fun getStandardDocuments(): List<SongItem>
 
     @GET("api/docs/documents/search")
-    suspend fun searchStandardDocuments(@Query("q") term: String): List<FileItem>
+    suspend fun searchStandardDocuments(@Query("q") term: String): List<SongItem>
 
     @GET("api/docs/others")
-    suspend fun getOtherDocuments(): List<FileItem>
+    suspend fun getOtherDocuments(): List<SongItem>
 
     @GET("api/docs/search")
-    suspend fun searchDocuments(@Query("q") term: String): List<FileItem>
+    suspend fun searchDocuments(@Query("q") term: String): List<SongItem>
 
     @GET("api/stream/{id}")
     suspend fun streamFile(@Path("id") id: String): retrofit2.Response<okhttp3.ResponseBody>

@@ -36,7 +36,7 @@ bool Database::fileExistsByPath(const std::string& path) {
 
     pqxx::work txn(_conn);
     auto result = txn.exec_params(
-        "SELECT 1 FROM files HERE path = $1 LIMIT 1",
+        "SELECT 1 FROM files WHERE path = $1 LIMIT 1",
         path
     );
 
@@ -154,7 +154,7 @@ void Database::insertMusicMeta(pqxx::work& txn, const std::string& fileId, const
     // nullptr for value 0 beacuse 0 years isnt valid
     txn.exec_params(R"(
         INSERT INTO music_meta
-            (file_id, artist_id, genre_id, album, year, duration_sec, bitrate, track_no)
+            (file_id, title, artist_id, genre_id, album, year, duration_sec, bitrate, track_no)
         VALUES ($1, $2, $3::uuid, $4::uuid, $5, $6, $7, $8, $9)
         )", 
         
@@ -190,7 +190,7 @@ void Database::insertVideoMeta(pqxx::work& txn,const std::string& fileId, const 
 
 void Database::insertImageMeta(pqxx::work& txn, const std::string& fileId, const ImageData& d) {
     txn.exec_params(R"(
-            INSERT INTO video_meta (file_id, width, height, date_taken, camera)
+            INSERT INTO image_meta (file_id, width, height, date_taken, camera)
             VALUES ($1, $2, $3, $4, $5)
         )",
 

@@ -5,6 +5,7 @@
 #include <optional>
 #include "db.h"
 
+namespace Metadata {
 // defining file type via extension
 // returns "music" | "video" | "image" | "document" | "" (unknown)
 std::string getFileType(const std::string& path);
@@ -25,12 +26,17 @@ std::optional<DocumentData> extractDocument(const std::string& path);
 // Thumbnail generation - we will se the usage of this beacuse of inconsistent metdata files...
 // if doenst work properly - (inserting artists by hand, inserting thumbnails, handling via filename)
 
+// for Video: ffmpeg extracts frame
+// for MP3: cover art from ID3 tag
+// for photo: resize original photo
+// for PDF: poppler renders first page
 std::string generateThumbnail(const std::string& filePath, const std::string& fileId, const std::string& fileType);
 
 
 // MAIN FUNCTION - create complete fileRecord (calls all other funcs);
 FileRecord buildRecord(const std::string& path); 
 
+}
 
 // metadata.h
 #endif

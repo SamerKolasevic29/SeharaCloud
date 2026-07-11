@@ -293,7 +293,7 @@ std::optional<DocumentData> Metadata::extractDocument(const std::string& path) {
 std::string Metadata::generateThumbnail(const std::string& filePath,
                                          const std::string& fileId,
                                          const std::string& fileType) {
-    const std::string thumbDir  = "/mnt/cloud/thumbnails/files/";
+    const std::string thumbDir  = "/data/seharacloud/media/thumbnails/";
     const std::string thumbPath = thumbDir + fileId + ".jpg";
 
     fs::create_directories(thumbDir);

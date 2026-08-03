@@ -18,6 +18,8 @@ import com.devfamily.sehara.ui.screens.music.MusicListScreen
 import com.devfamily.sehara.ui.screens.music.MusicPlayerViewModel
 import com.devfamily.sehara.ui.screens.video.VideoHomeScreen
 import com.devfamily.sehara.ui.screens.video.movieScreen
+import com.devfamily.sehara.ui.screens.docs.DocumentsScreen
+import com.devfamily.sehara.ui.screens.docs.DocumentViewerScreen
 
 @Composable
 fun AppNavigation() {
@@ -43,7 +45,8 @@ fun AppNavigation() {
                 onMusicClick = {
                     navController.navigate(Routes.Music.route)
                 },
-                onVideoClick = { navController.navigate(Routes.Video.route) }
+                onVideoClick = { navController.navigate(Routes.Video.route) },
+                onDocsClick = { navController.navigate(Routes.Docs.route) }
             )
         }
 
@@ -71,6 +74,33 @@ fun AppNavigation() {
             )
         }
 
+        composable(Routes.Docs.route) {
+            DocumentsScreen(
+                onBackClick = { navController.popBackStack() },
+                onDocumentClick = { doc ->
+                    navController.navigate(
+                        Routes.DocumentViewer.createRoute(doc.id, doc.title ?: "Untitled")
+                    )
+                }
+            )
+        }
+
+        composable(
+            route = Routes.DocumentViewer.route,
+            arguments = listOf(
+                navArgument("id") { type = NavType.StringType },
+                navArgument("name") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id") ?: ""
+            val name = Uri.decode(backStackEntry.arguments?.getString("name") ?: "")
+
+            DocumentViewerScreen(
+                documentId = id,
+                documentName = name,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
         composable(Routes.Artist.route) {
             ArtistScreen(
                 showInitialSplash = true,

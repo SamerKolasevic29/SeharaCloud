@@ -5,9 +5,11 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
 
+    const val BASE_URL = Secrets.BASE_URL
+
     val instance: ApiService by lazy {
         Retrofit.Builder()
-            .baseUrl(Secrets.BASE_URL)
+            .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(ApiService::class.java)

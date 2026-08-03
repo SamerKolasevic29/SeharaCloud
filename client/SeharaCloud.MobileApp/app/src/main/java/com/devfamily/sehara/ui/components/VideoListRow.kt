@@ -1,6 +1,7 @@
 package com.devfamily.sehara.ui.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +17,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -36,15 +38,23 @@ import com.devfamily.sehara.data.VideoItem
 
 private val VIDEO_ROW_HEIGHT = 70.dp
 private const val VIDEO_MAX_VISIBLE_ITEMS = 5
+private val VIDEO_ROW_SHAPE = RoundedCornerShape(16.dp)
 
 @Composable
 fun VideoListRow(item: VideoItem, onClick: () -> Unit = {}) {
+    val interactionSource = remember { MutableInteractionSource() }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(VIDEO_ROW_HEIGHT)
-            .padding(horizontal = 16.dp)
-            .clickable { onClick() },
+            .clip(VIDEO_ROW_SHAPE)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(color = Color(0xFFC70025)),
+                onClick = onClick
+            )
+            .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start
     ) {

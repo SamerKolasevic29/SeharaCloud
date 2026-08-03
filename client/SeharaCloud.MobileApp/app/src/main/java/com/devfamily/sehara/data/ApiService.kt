@@ -59,25 +59,25 @@ interface ApiService {
     suspend fun getImageById(@Path("id") id: String): SongItem
 
     @GET("api/docs")
-    suspend fun getDocuments(): List<SongItem>
+    suspend fun getDocuments(): List<DocumentItem>
 
     @GET("api/docs/books")
-    suspend fun getBooks(): List<SongItem>
+    suspend fun getBooks(): List<DocumentItem>
 
     @GET("api/docs/books/search")
-    suspend fun searchBooks(@Query("q") term: String): List<SongItem>
+    suspend fun searchBooks(@Query("q") term: String): List<DocumentItem>
 
     @GET("api/docs/documents")
-    suspend fun getStandardDocuments(): List<SongItem>
+    suspend fun getStandardDocuments(): List<DocumentItem>
 
     @GET("api/docs/documents/search")
-    suspend fun searchStandardDocuments(@Query("q") term: String): List<SongItem>
+    suspend fun searchStandardDocuments(@Query("q") term: String): List<DocumentItem>
 
     @GET("api/docs/others")
-    suspend fun getOtherDocuments(): List<SongItem>
+    suspend fun getOtherDocuments(): List<DocumentItem>
 
     @GET("api/docs/search")
-    suspend fun searchDocuments(@Query("q") term: String): List<SongItem>
+    suspend fun searchDocuments(@Query("q") term: String): List<DocumentItem>
 
     @GET("api/stream/{id}")
     suspend fun streamFile(@Path("id") id: String): retrofit2.Response<okhttp3.ResponseBody>

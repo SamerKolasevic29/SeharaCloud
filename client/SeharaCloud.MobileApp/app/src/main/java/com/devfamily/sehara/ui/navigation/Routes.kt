@@ -15,4 +15,9 @@ sealed class Routes(val route: String) {
     object Video : Routes("video")
     object Movie : Routes("movie")
     object Docs : Routes("docs")
+
+    object DocumentViewer : Routes("document_viewer/{id}/{name}") {
+        fun createRoute(id: String, name: String) =
+            "document_viewer/$id/${Uri.encode(name)}"
+    }
 }

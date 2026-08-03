@@ -35,7 +35,49 @@ class DocumentsViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                _docsList.value = RetrofitClient.instance.getDocuments()
+                _docsList.value = RetrofitClient.instance.getDocuments().take(10)
+                _error.value = null
+            } catch (e: Exception) {
+                _error.value = e.toUserMessage()
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun fetchBooks() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                _docsList.value = RetrofitClient.instance.getBooks()
+                _error.value = null
+            } catch (e: Exception) {
+                _error.value = e.toUserMessage()
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun fetchStandardDocuments() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                _docsList.value = RetrofitClient.instance.getStandardDocuments()
+                _error.value = null
+            } catch (e: Exception) {
+                _error.value = e.toUserMessage()
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun fetchOtherDocuments() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                _docsList.value = RetrofitClient.instance.getOtherDocuments()
                 _error.value = null
             } catch (e: Exception) {
                 _error.value = e.toUserMessage()
@@ -50,6 +92,32 @@ class DocumentsViewModel : ViewModel() {
             _isSearching.value = true
             try {
                 _searchResults.value = RetrofitClient.instance.searchDocuments(query)
+            } catch (e: Exception) {
+                _searchResults.value = emptyList()
+            } finally {
+                _isSearching.value = false
+            }
+        }
+    }
+
+    fun searchBooks(query: String) {
+        viewModelScope.launch {
+            _isSearching.value = true
+            try {
+                _searchResults.value = RetrofitClient.instance.searchBooks(query)
+            } catch (e: Exception) {
+                _searchResults.value = emptyList()
+            } finally {
+                _isSearching.value = false
+            }
+        }
+    }
+
+    fun searchStandardDocuments(query: String) {
+        viewModelScope.launch {
+            _isSearching.value = true
+            try {
+                _searchResults.value = RetrofitClient.instance.searchStandardDocuments(query)
             } catch (e: Exception) {
                 _searchResults.value = emptyList()
             } finally {

@@ -6,16 +6,15 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -40,52 +39,62 @@ fun DocsGridView(
     items: List<DocumentItem>,
     onItemClick: (DocumentItem) -> Unit = {}
 ) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
-        modifier = Modifier
-            .width(332.dp)
-            .height(500.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    val rows = remember(items) { items.chunked(3) }
+
+    Column(
+        modifier = Modifier.width(332.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        items(items, key = { it.id }) { doc ->
-            val interactionSource = remember { MutableInteractionSource() }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(DOC_GRID_SHAPE)
-                    .border(
-                        width = 1.dp,
-                        color = Color(0xFFC70025),
-                        shape = DOC_GRID_SHAPE
-                    )
-                    .background(
-                        color = Color.White,
-                        shape = DOC_GRID_SHAPE
-                    )
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = ripple(color = Color(0xFFC70025)),
-                        onClick = { onItemClick(doc) }
-                    )
-                    .padding(vertical = 12.dp, horizontal = 6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+        rows.forEach { rowItems ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_docs),
-                    contentDescription = null,
-                    modifier = Modifier.size(32.dp),
-                    colorFilter = ColorFilter.tint(Color(0xFFC70025))
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = doc.title ?: "Untitled",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF333333),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                for (i in 0 until 3) {
+                    if (i < rowItems.size) {
+                        val doc = rowItems[i]
+                        val interactionSource = remember { MutableInteractionSource() }
+
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(DOC_GRID_SHAPE)
+                                .border(
+                                    width = 1.dp,
+                                    color = Color(0xFFC70025),
+                                    shape = DOC_GRID_SHAPE
+                                )
+                                .background(
+                                    color = Color.White,
+                                    shape = DOC_GRID_SHAPE
+                                )
+                                .clickable(
+                                    interactionSource = interactionSource,
+                                    indication = ripple(color = Color(0xFFC70025)),
+                                    onClick = { onItemClick(doc) }
+                                )
+                                .padding(vertical = 12.dp, horizontal = 6.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_docs),
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp),
+                                colorFilter = ColorFilter.tint(Color(0xFFC70025))
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = doc.title ?: "Untitled",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF333333),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
             }
         }
     }

@@ -1,5 +1,7 @@
 package com.devfamily.sehara.ui.screens.video
 
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -29,6 +31,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -40,31 +43,67 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.devfamily.sehara.R
-import com.devfamily.sehara.ui.components.MusicListRow
 import com.devfamily.sehara.ui.components.SearchBar
 import com.devfamily.sehara.ui.components.VideoListRow
+import com.devfamily.sehara.ui.components.VideoPlayerOverlay
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 
+private data class VideoCategoryUi(
+    val title: String,
+    val splashBg: Int,
+    val emptyMessage: String
+)
+
+private fun VideoCategory.toUi(): VideoCategoryUi = when (this) {
+    VideoCategory.MOVIE -> VideoCategoryUi(
+        title = "Movie",
+        splashBg = R.drawable.video_movie_splash_bg,
+        emptyMessage = "No movies found"
+    )
+    VideoCategory.DOCUMENTARY -> VideoCategoryUi(
+        title = "Documentary",
+        splashBg = R.drawable.video_movie_splash_bg,
+        emptyMessage = "No documentaries found"
+    )
+    VideoCategory.OTHER -> VideoCategoryUi(
+        title = "Other",
+        splashBg = R.drawable.video_movie_splash_bg,
+        emptyMessage = "No videos found"
+    )
+}
+
 @Composable
-fun movieScreen(
+fun VideoCategoryScreen(
     modifier: Modifier = Modifier,
+    category: VideoCategory,
     showInitialSplash: Boolean = true,
     onBackClick: () -> Unit = {},
-    viewModel: MovieViewModel = viewModel()
+    viewModel: VideoCategoryViewModel = viewModel(),
+    playerViewModel: VideoPlayerViewModel = viewModel()
 ) {
     var showSplash by rememberSaveable { mutableStateOf(showInitialSplash) }
-    val movieList by viewModel.movieList.collectAsState()
+    val videoList by viewModel.videoList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
+    val playerMode by playerViewModel.playerMode.collectAsState()
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    val ui = category.toUi()
+
+    LaunchedEffect(category) {
+        viewModel.loadCategory(category)
+    }
 
     LaunchedEffect(Unit) {
         if (showInitialSplash) {
@@ -80,25 +119,42 @@ fun movieScreen(
             viewModel.clearSearch()
         } else {
             delay(300)
-            viewModel.searchMovie(searchQuery)
+            viewModel.search(searchQuery)
+        }
+    }
+
+    val context = LocalContext.current
+    LaunchedEffect(playerMode) {
+        val activity = context as? Activity
+        if (playerMode == VideoPlayerMode.FULLSCREEN) {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        } else {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            val activity = context as? Activity
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
     }
 
     AnimatedContent(
         targetState = showSplash,
         transitionSpec = { fadeIn() togetherWith fadeOut() },
-        label = "movie_splash_transition"
+        label = "video_category_splash_transition"
     ) { isSplash ->
         if (isSplash) {
             Box(modifier = modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
                 Image(
-                    painter = painterResource(id = R.drawable.video_movie_splash_bg),
+                    painter = painterResource(id = ui.splashBg),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
                 Text(
-                    text = "Movie",
+                    text = ui.title,
                     style = MaterialTheme.typography.displayLarge,
                     color = Color.White,
                     modifier = Modifier
@@ -115,11 +171,23 @@ fun movieScreen(
                         .statusBarsPadding()
                         .navigationBarsPadding()
                 ) {
+                    if (playerMode == VideoPlayerMode.PORTRAIT) {
+                        VideoPlayerOverlay(
+                            viewModel = playerViewModel,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color.White)
-                            .padding(start = 32.dp, top = 32.dp, end = 32.dp, bottom = 12.dp),
+                            .padding(
+                                start = 32.dp,
+                                top = if (playerMode == VideoPlayerMode.PORTRAIT) 16.dp else 32.dp,
+                                end = 32.dp,
+                                bottom = 12.dp
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -131,7 +199,7 @@ fun movieScreen(
                                 .clickable { onBackClick() }
                         )
                         Text(
-                            text = "Movie",
+                            text = ui.title,
                             style = MaterialTheme.typography.displayMedium,
                             color = Color(0xFF999999)
                         )
@@ -199,7 +267,13 @@ fun movieScreen(
                                     }
                                     else -> {
                                         searchResults.forEach { item ->
-                                            VideoListRow(item = item, onClick = {})
+                                            VideoListRow(
+                                                item = item,
+                                                onClick = {
+                                                    keyboardController?.hide()
+                                                    playerViewModel.loadVideo(item, searchResults)
+                                                }
+                                            )
                                         }
                                     }
                                 }
@@ -233,7 +307,7 @@ fun movieScreen(
                                     )
                                 }
                             }
-                            movieList.isEmpty() -> {
+                            videoList.isEmpty() -> {
                                 Box(
                                     modifier = Modifier
                                         .width(332.dp)
@@ -241,7 +315,7 @@ fun movieScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = "No movies found",
+                                        text = ui.emptyMessage,
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = Color(0xFF8E8D8D)
                                     )
@@ -261,8 +335,13 @@ fun movieScreen(
                                             shape = RoundedCornerShape(24.dp)
                                         )
                                 ) {
-                                    movieList.forEach { item ->
-                                        VideoListRow(item = item, onClick = {})
+                                    videoList.forEach { item ->
+                                        VideoListRow(
+                                            item = item,
+                                            onClick = {
+                                                playerViewModel.loadVideo(item, videoList)
+                                            }
+                                        )
                                     }
                                 }
                             }
@@ -270,6 +349,19 @@ fun movieScreen(
 
                         Spacer(modifier = Modifier.height(24.dp))
                     }
+                }
+
+                if (playerMode == VideoPlayerMode.FLOATING) {
+                    VideoPlayerOverlay(
+                        viewModel = playerViewModel
+                    )
+                }
+
+                if (playerMode == VideoPlayerMode.FULLSCREEN) {
+                    VideoPlayerOverlay(
+                        viewModel = playerViewModel,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
         }

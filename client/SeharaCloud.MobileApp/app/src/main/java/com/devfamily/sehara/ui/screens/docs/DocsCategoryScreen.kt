@@ -41,29 +41,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.devfamily.sehara.R
 import com.devfamily.sehara.data.DocumentItem
-import com.devfamily.sehara.ui.components.CategoryCard
 import com.devfamily.sehara.ui.components.DocListScrollable
 import com.devfamily.sehara.ui.components.DocsGridView
 import com.devfamily.sehara.ui.components.SearchBar
 import kotlinx.coroutines.delay
 
-private enum class DocsViewMode { LIST, GRID }
+enum class DocsCategory { BOOKS, DOCUMENTS, OTHERS }
+
+private enum class DocsCategoryViewMode { LIST, GRID }
 
 @Composable
-fun DocumentsScreen(
+fun DocsCategoryScreen(
     modifier: Modifier = Modifier,
+    category: DocsCategory,
     onBackClick: () -> Unit = {},
     onDocumentClick: (DocumentItem) -> Unit = {},
-    onDocumentsCategoryClick: () -> Unit = {},
-    onBooksClick: () -> Unit = {},
-    onOthersClick: () -> Unit = {},
     viewModel: DocumentsViewModel = viewModel()
 ) {
     val docsList by viewModel.docsList.collectAsState()
@@ -73,16 +71,40 @@ fun DocumentsScreen(
     val isSearching by viewModel.isSearching.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
-    var viewMode by rememberSaveable { mutableStateOf(DocsViewMode.LIST) }
+    var viewMode by rememberSaveable { mutableStateOf(DocsCategoryViewMode.LIST) }
     val keyboardController = LocalSoftwareKeyboardController.current
+
+    val title = when (category) {
+        DocsCategory.BOOKS -> "Books"
+        DocsCategory.DOCUMENTS -> "Documents"
+        DocsCategory.OTHERS -> "Others"
+    }
+
+    LaunchedEffect(category) {
+        when (category) {
+            DocsCategory.BOOKS -> viewModel.fetchBooks()
+            DocsCategory.DOCUMENTS -> viewModel.fetchStandardDocuments()
+            DocsCategory.OTHERS -> viewModel.fetchOtherDocuments()
+        }
+    }
 
     LaunchedEffect(searchQuery) {
         if (searchQuery.isBlank()) {
             viewModel.clearSearch()
         } else {
             delay(300)
-            viewModel.searchDocuments(searchQuery)
+            when (category) {
+                DocsCategory.BOOKS -> viewModel.searchBooks(searchQuery)
+                DocsCategory.DOCUMENTS -> viewModel.searchStandardDocuments(searchQuery)
+                DocsCategory.OTHERS -> {}
+            }
         }
+    }
+
+    val displayedSearchResults = if (category == DocsCategory.OTHERS) {
+        docsList.filter { it.title?.contains(searchQuery, ignoreCase = true) == true }
+    } else {
+        searchResults
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -113,7 +135,7 @@ fun DocumentsScreen(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "Docs",
+                        text = title,
                         style = MaterialTheme.typography.displayMedium,
                         color = Color(0xFF999999)
                     )
@@ -173,7 +195,7 @@ fun DocumentsScreen(
                                     CircularProgressIndicator(color = Color(0xFFC70025))
                                 }
                             }
-                            searchResults.isEmpty() -> {
+                            displayedSearchResults.isEmpty() -> {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -188,7 +210,7 @@ fun DocumentsScreen(
                                 }
                             }
                             else -> {
-                                DocListScrollable(items = searchResults) { onDocumentClick(it) }
+                                DocListScrollable(items = displayedSearchResults) { onDocumentClick(it) }
                             }
                         }
                     }
@@ -209,18 +231,18 @@ fun DocumentsScreen(
                                 shape = RoundedCornerShape(50.dp)
                             )
                             .background(
-                                color = if (viewMode == DocsViewMode.LIST) Color(0xFFC70025) else Color.White,
+                                color = if (viewMode == DocsCategoryViewMode.LIST) Color(0xFFC70025) else Color.White,
                                 shape = RoundedCornerShape(50.dp)
                             )
                             .clip(RoundedCornerShape(50.dp))
-                            .clickable { viewMode = DocsViewMode.LIST }
+                            .clickable { viewMode = DocsCategoryViewMode.LIST }
                             .padding(vertical = 10.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "List",
                             style = MaterialTheme.typography.titleSmall,
-                            color = if (viewMode == DocsViewMode.LIST) Color.White else Color(0xFFC70025)
+                            color = if (viewMode == DocsCategoryViewMode.LIST) Color.White else Color(0xFFC70025)
                         )
                     }
 
@@ -233,18 +255,18 @@ fun DocumentsScreen(
                                 shape = RoundedCornerShape(50.dp)
                             )
                             .background(
-                                color = if (viewMode == DocsViewMode.GRID) Color(0xFFC70025) else Color.White,
+                                color = if (viewMode == DocsCategoryViewMode.GRID) Color(0xFFC70025) else Color.White,
                                 shape = RoundedCornerShape(50.dp)
                             )
                             .clip(RoundedCornerShape(50.dp))
-                            .clickable { viewMode = DocsViewMode.GRID }
+                            .clickable { viewMode = DocsCategoryViewMode.GRID }
                             .padding(vertical = 10.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "Grid",
                             style = MaterialTheme.typography.titleSmall,
-                            color = if (viewMode == DocsViewMode.GRID) Color.White else Color(0xFFC70025)
+                            color = if (viewMode == DocsCategoryViewMode.GRID) Color.White else Color(0xFFC70025)
                         )
                     }
                 }
@@ -290,7 +312,7 @@ fun DocumentsScreen(
                             )
                         }
                     }
-                    viewMode == DocsViewMode.LIST -> {
+                    viewMode == DocsCategoryViewMode.LIST -> {
                         Column(
                             modifier = Modifier
                                 .width(332.dp)
@@ -310,59 +332,6 @@ fun DocumentsScreen(
                     else -> {
                         DocsGridView(items = docsList) { onDocumentClick(it) }
                     }
-                }
-
-                Spacer(modifier = Modifier.height(48.dp))
-
-                Box(modifier = Modifier.width(332.dp)) {
-                    Text(
-                        text = "More Categories",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color(0xFFB30021)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    CategoryCard(
-                        modifier = Modifier.weight(1f),
-                        backgroundImage = R.drawable.home_docs_card,
-                        label = "Documents",
-                        onClick = onDocumentsCategoryClick
-                    )
-                    CategoryCard(
-                        modifier = Modifier.weight(1f),
-                        backgroundImage = R.drawable.home_docs_card,
-                        label = "Books",
-                        onClick = onBooksClick
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.75f)
-                        .height(180.dp)
-                        .clickable { onOthersClick() },
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.home_docs_card),
-                        contentDescription = null,
-                        contentScale = ContentScale.FillBounds,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    Text(
-                        text = "Others",
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(bottom = 14.dp)
-                    )
                 }
             }
         }

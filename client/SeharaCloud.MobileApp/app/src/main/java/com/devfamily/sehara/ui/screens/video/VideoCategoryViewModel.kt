@@ -9,10 +9,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class MovieViewModel : ViewModel() {
+enum class VideoCategory { MOVIE, DOCUMENTARY, OTHER }
 
-    private val _movieList = MutableStateFlow<List<VideoItem>>(emptyList())
-    val movieList: StateFlow<List<VideoItem>> = _movieList.asStateFlow()
+class VideoCategoryViewModel : ViewModel() {
+
+    private val _videoList = MutableStateFlow<List<VideoItem>>(emptyList())
+    val videoList: StateFlow<List<VideoItem>> = _videoList.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -26,15 +28,18 @@ class MovieViewModel : ViewModel() {
     private val _isSearching = MutableStateFlow(false)
     val isSearching: StateFlow<Boolean> = _isSearching.asStateFlow()
 
-    init {
-        fetchMovies()
-    }
+    private var currentCategory: VideoCategory = VideoCategory.MOVIE
 
-    fun fetchMovies() {
+    fun loadCategory(category: VideoCategory) {
+        currentCategory = category
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                _movieList.value = RetrofitClient.instance.getMovies()
+                _videoList.value = when (category) {
+                    VideoCategory.MOVIE -> RetrofitClient.instance.getMovies()
+                    VideoCategory.DOCUMENTARY -> RetrofitClient.instance.getDocumentaries()
+                    VideoCategory.OTHER -> RetrofitClient.instance.getOtherVideos()
+                }
                 _error.value = null
             } catch (e: Exception) {
                 _error.value = e.toUserMessage()
@@ -44,11 +49,18 @@ class MovieViewModel : ViewModel() {
         }
     }
 
-    fun searchMovie(query: String) {
+    fun search(query: String) {
         viewModelScope.launch {
             _isSearching.value = true
             try {
-                _searchResults.value = RetrofitClient.instance.searchMovies(query)
+                _searchResults.value = when (currentCategory) {
+                    VideoCategory.MOVIE -> RetrofitClient.instance.searchMovies(query)
+                    VideoCategory.DOCUMENTARY -> RetrofitClient.instance.searchDocumentaries(query)
+                    VideoCategory.OTHER -> _videoList.value.filter {
+                        it.title.contains(query, ignoreCase = true) ||
+                                it.filename.contains(query, ignoreCase = true)
+                    }
+                }
             } catch (e: Exception) {
                 _searchResults.value = emptyList()
             } finally {

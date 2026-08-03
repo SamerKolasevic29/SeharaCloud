@@ -55,14 +55,7 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
 
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_ENDED) {
-                    if (hasNext) {
-                        skipNext()
-                    } else {
-                        _isPlaying.value = false
-                        _currentPosition.value = 0L
-                        exoPlayer.seekTo(0)
-                        exoPlayer.pause()
-                    }
+                    skipNext()
                 }
             }
         })
@@ -115,19 +108,25 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun skipNext() {
+        if (queue.isEmpty()) return
+
         if (hasNext) {
             currentQueueIndex++
-            val item = queue[currentQueueIndex]
-            _hasPrevious.value = currentQueueIndex > 0
-            _hasNext.value = currentQueueIndex < queue.size - 1
-            loadSong(
-                item.id,
-                item.title ?: item.filename,
-                item.artist ?: "Unknown Artist",
-                (item.durationSec ?: 0) * 1000L,
-                item.thumbnailUrl
-            )
+        } else {
+            currentQueueIndex = 0
         }
+
+        val item = queue[currentQueueIndex]
+        _hasPrevious.value = currentQueueIndex > 0
+        _hasNext.value = currentQueueIndex < queue.size - 1
+
+        loadSong(
+            item.id,
+            item.title ?: item.filename,
+            item.artist ?: "Unknown Artist",
+            (item.durationSec ?: 0) * 1000L,
+            item.thumbnailUrl
+        )
     }
 
     fun skipPrevious() {

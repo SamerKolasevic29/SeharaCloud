@@ -1,5 +1,7 @@
 package com.devfamily.sehara.ui.screens.video
 
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -29,6 +31,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,19 +44,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.devfamily.sehara.R
 import com.devfamily.sehara.ui.components.CategoryCard
 import com.devfamily.sehara.ui.components.SearchBar
-import com.devfamily.sehara.ui.components.VideoListRow
+import com.devfamily.sehara.ui.components.VideoListScrollable
 import com.devfamily.sehara.ui.components.VideoPlayerOverlay
 import kotlinx.coroutines.delay
-import android.app.Activity
-import android.content.pm.ActivityInfo
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.ui.draw.clip
 
 @Composable
 fun VideoHomeScreen(
@@ -75,6 +79,8 @@ fun VideoHomeScreen(
     val isSearching by viewModel.isSearching.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     val playerMode by playerViewModel.playerMode.collectAsState()
+    var selectedTab by rememberSaveable { mutableStateOf(0) }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(Unit) {
         if (showInitialSplash) {
@@ -95,11 +101,18 @@ fun VideoHomeScreen(
     }
 
     val context = LocalContext.current
-    DisposableEffect(Unit) {
+    LaunchedEffect(playerMode) {
         val activity = context as? Activity
-        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        if (playerMode == VideoPlayerMode.FULLSCREEN) {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        } else {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
+    }
 
+    DisposableEffect(Unit) {
         onDispose {
+            val activity = context as? Activity
             activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
     }
@@ -110,7 +123,7 @@ fun VideoHomeScreen(
         label = "splash_transition"
     ) { isSplash ->
         if (isSplash) {
-            Box(modifier = modifier.fillMaxSize()) {
+            Box(modifier = modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
                 Image(
                     painter = painterResource(id = R.drawable.video_splash_bg),
                     contentDescription = null,
@@ -141,12 +154,26 @@ fun VideoHomeScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.White)
+                        .statusBarsPadding()
+                        .navigationBarsPadding()
                 ) {
+                    if (playerMode == VideoPlayerMode.PORTRAIT) {
+                        VideoPlayerOverlay(
+                            viewModel = playerViewModel,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color.White)
-                            .padding(start = 32.dp, top = 32.dp, end = 32.dp, bottom = 12.dp),
+                            .padding(
+                                start = 32.dp,
+                                top = if (playerMode == VideoPlayerMode.PORTRAIT) 16.dp else 32.dp,
+                                end = 32.dp,
+                                bottom = 12.dp
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -180,10 +207,7 @@ fun VideoHomeScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(
-                                rememberScrollState(),
-                                enabled = searchQuery.isBlank()
-                            )
+                            .verticalScroll(rememberScrollState())
                             .padding(bottom = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -240,13 +264,9 @@ fun VideoHomeScreen(
                                         }
                                     }
                                     else -> {
-                                        searchResults.forEach { item ->
-                                            VideoListRow(
-                                                item = item,
-                                                onClick = {
-                                                    playerViewModel.loadVideo(item, searchResults)
-                                                }
-                                            )
+                                        VideoListScrollable(items = searchResults) { item ->
+                                            keyboardController?.hide()
+                                            playerViewModel.loadVideo(item, searchResults)
                                         }
                                     }
                                 }
@@ -255,15 +275,60 @@ fun VideoHomeScreen(
 
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        Box(modifier = Modifier.width(332.dp)) {
-                            Text(
-                                text = "Recent",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Color(0xFFB30021)
-                            )
+                        Row(
+                            modifier = Modifier.width(332.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .border(
+                                        width = 1.dp,
+                                        color = Color(0xFFC70025),
+                                        shape = RoundedCornerShape(50.dp)
+                                    )
+                                    .background(
+                                        color = if (selectedTab == 0) Color(0xFFC70025) else Color.White,
+                                        shape = RoundedCornerShape(50.dp)
+                                    )
+                                    .clip(RoundedCornerShape(50.dp))
+                                    .clickable { selectedTab = 0 }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Recent",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = if (selectedTab == 0) Color.White else Color(0xFFC70025)
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .border(
+                                        width = 1.dp,
+                                        color = Color(0xFFC70025),
+                                        shape = RoundedCornerShape(50.dp)
+                                    )
+                                    .background(
+                                        color = if (selectedTab == 1) Color(0xFFC70025) else Color.White,
+                                        shape = RoundedCornerShape(50.dp)
+                                    )
+                                    .clip(RoundedCornerShape(50.dp))
+                                    .clickable { selectedTab = 1 }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "All",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = if (selectedTab == 1) Color.White else Color(0xFFC70025)
+                                )
+                            }
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
                         when {
                             isLoading -> {
@@ -290,124 +355,77 @@ fun VideoHomeScreen(
                                     )
                                 }
                             }
-                            recentList.isEmpty() -> {
-                                Box(
-                                    modifier = Modifier
-                                        .width(332.dp)
-                                        .padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "No recent videos",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = Color(0xFF8E8D8D)
-                                    )
+                            selectedTab == 0 -> {
+                                if (recentList.isEmpty()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .width(332.dp)
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "No recent videos",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color(0xFF8E8D8D)
+                                        )
+                                    }
+                                } else {
+                                    Column(
+                                        modifier = Modifier
+                                            .width(332.dp)
+                                            .border(
+                                                width = 1.dp,
+                                                color = Color(0xFFC70025),
+                                                shape = RoundedCornerShape(24.dp)
+                                            )
+                                            .background(
+                                                color = Color.White,
+                                                shape = RoundedCornerShape(24.dp)
+                                            )
+                                    ) {
+                                        VideoListScrollable(items = recentList) { item ->
+                                            playerViewModel.loadVideo(item, recentList)
+                                        }
+                                    }
                                 }
                             }
-                            else -> {
-                                Column(
-                                    modifier = Modifier
-                                        .width(332.dp)
-                                        .border(
-                                            width = 1.dp,
-                                            color = Color(0xFFC70025),
-                                            shape = RoundedCornerShape(24.dp)
+                            selectedTab == 1 -> {
+                                if (videoList.isEmpty()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .width(332.dp)
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "No videos found",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color(0xFF8E8D8D)
                                         )
-                                        .background(
-                                            color = Color.White,
-                                            shape = RoundedCornerShape(24.dp)
-                                        )
-                                ) {
-                                    recentList.forEach { item ->
-                                        VideoListRow(
-                                            item = item,
-                                            onClick = {
-                                                playerViewModel.loadVideo(item, recentList)
-                                            }
-                                        )
+                                    }
+                                } else {
+                                    Column(
+                                        modifier = Modifier
+                                            .width(332.dp)
+                                            .border(
+                                                width = 1.dp,
+                                                color = Color(0xFFC70025),
+                                                shape = RoundedCornerShape(24.dp)
+                                            )
+                                            .background(
+                                                color = Color.White,
+                                                shape = RoundedCornerShape(24.dp)
+                                            )
+                                    ) {
+                                        VideoListScrollable(items = videoList) { item ->
+                                            playerViewModel.loadVideo(item, videoList)
+                                        }
                                     }
                                 }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Box(modifier = Modifier.width(332.dp)) {
-                            Text(
-                                text = "All",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Color(0xFFB30021)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        when {
-                            isLoading -> {
-                                Box(
-                                    modifier = Modifier
-                                        .width(332.dp)
-                                        .height(100.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator(color = Color(0xFFC70025))
-                                }
-                            }
-                            error != null -> {
-                                Box(
-                                    modifier = Modifier
-                                        .width(332.dp)
-                                        .padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "Error: $error",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = Color(0xFF8E8D8D)
-                                    )
-                                }
-                            }
-                            videoList.isEmpty() -> {
-                                Box(
-                                    modifier = Modifier
-                                        .width(332.dp)
-                                        .padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "No videos found",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = Color(0xFF8E8D8D)
-                                    )
-                                }
-                            }
-                            else -> {
-                                Column(
-                                    modifier = Modifier
-                                        .width(332.dp)
-                                        .border(
-                                            width = 1.dp,
-                                            color = Color(0xFFC70025),
-                                            shape = RoundedCornerShape(24.dp)
-                                        )
-                                        .background(
-                                            color = Color.White,
-                                            shape = RoundedCornerShape(24.dp)
-                                        )
-                                ) {
-                                    videoList.forEach { item ->
-                                        VideoListRow(
-                                            item = item,
-                                            onClick = {
-                                                playerViewModel.loadVideo(item, videoList)
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(48.dp))
 
                         Box(modifier = Modifier.width(332.dp)) {
                             Text(
@@ -417,7 +435,7 @@ fun VideoHomeScreen(
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),

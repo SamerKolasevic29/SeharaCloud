@@ -38,6 +38,8 @@ import com.devfamily.sehara.R
 import com.devfamily.sehara.ui.components.MusicListRow
 import com.devfamily.sehara.ui.components.MusicPlayerOverlay
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 
 @Composable
 fun MusicListScreen(
@@ -79,7 +81,9 @@ fun MusicListScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White),
+                .background(Color.White)
+                .statusBarsPadding()
+                .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(

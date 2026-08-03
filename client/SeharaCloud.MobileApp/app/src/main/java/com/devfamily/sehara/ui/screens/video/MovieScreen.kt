@@ -48,6 +48,8 @@ import com.devfamily.sehara.ui.components.MusicListRow
 import com.devfamily.sehara.ui.components.SearchBar
 import com.devfamily.sehara.ui.components.VideoListRow
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 
 @Composable
 fun movieScreen(
@@ -88,7 +90,7 @@ fun movieScreen(
         label = "movie_splash_transition"
     ) { isSplash ->
         if (isSplash) {
-            Box(modifier = modifier.fillMaxSize()) {
+            Box(modifier = modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
                 Image(
                     painter = painterResource(id = R.drawable.video_movie_splash_bg),
                     contentDescription = null,
@@ -110,6 +112,8 @@ fun movieScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.White)
+                        .statusBarsPadding()
+                        .navigationBarsPadding()
                 ) {
                     Row(
                         modifier = Modifier

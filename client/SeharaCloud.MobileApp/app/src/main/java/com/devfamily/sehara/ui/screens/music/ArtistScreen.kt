@@ -49,6 +49,9 @@ import com.devfamily.sehara.ui.components.CategoryCard
 import com.devfamily.sehara.ui.components.MusicPlayerOverlay
 import com.devfamily.sehara.ui.components.SearchBar
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 
 @Composable
 fun ArtistScreen(
@@ -107,8 +110,8 @@ fun ArtistScreen(
         label = "artist_splash_transition"
     ) { isSplash ->
         if (isSplash) {
-            Box(modifier = modifier.fillMaxSize()) {
-                Image(
+            Box(modifier = modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+            Image(
                     painter = painterResource(id = R.drawable.music_artist_card),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
@@ -129,6 +132,8 @@ fun ArtistScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.White)
+                        .statusBarsPadding()
+                        .navigationBarsPadding()
                 ) {
                     Row(
                         modifier = Modifier
@@ -157,7 +162,7 @@ fun ArtistScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
-                            .padding(bottom = if (hasActiveSong) 120.dp else 24.dp),
+                            .padding(bottom = if (hasActiveSong) 220.dp else 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -280,9 +285,13 @@ fun ArtistScreen(
                                                     )
                                                 }
 
+                                                // --- REZOLUCIJA TRIKA: Određujemo offset ovisno o strani ---
+                                                val borderOffset = if (index == 0) (-1).dp else 1.dp
+
                                                 CategoryCard(
                                                     modifier = Modifier
                                                         .weight(1f)
+                                                        .offset(x = borderOffset)
                                                         .border(
                                                             width = 1.dp,
                                                             color = Color(0xFFC70025),
@@ -293,20 +302,11 @@ fun ArtistScreen(
                                                     backgroundUrl = artist.thumbnailUrl,
                                                     label = "",
                                                     onClick = { onArtistClick(artist.id, artist.name) },
-                                                    bottomStartContent = {
-                                                        Row(modifier = Modifier.fillMaxWidth()) {
-                                                            Spacer(modifier = Modifier.weight(1f))
-                                                            Text(
-                                                                text = artist.name,
-                                                                color = Color.White,
-                                                                style = MaterialTheme.typography.titleLarge
-                                                            )
-                                                        }
-                                                    }
+                                                    bottomStartContent = {}
                                                 )
 
                                                 if (index == 0 && rowArtists.size == 2) {
-                                                    Spacer(modifier = Modifier.width(16.dp))
+                                                    Spacer(modifier = Modifier.width(14.dp))
                                                 }
                                             }
 

@@ -1,5 +1,6 @@
 package com.devfamily.sehara.ui.screens.music
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -34,6 +35,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,14 +47,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.devfamily.sehara.R
 import com.devfamily.sehara.ui.components.CategoryCard
-import com.devfamily.sehara.ui.components.MusicListRow
+import com.devfamily.sehara.ui.components.MusicListScrollable
 import com.devfamily.sehara.ui.components.MusicPlayerOverlay
 import com.devfamily.sehara.ui.components.SearchBar
 import kotlinx.coroutines.delay
-import androidx.activity.compose.BackHandler
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.draw.clip
 
 @Composable
 fun MusicHomeScreen(
@@ -72,12 +74,14 @@ fun MusicHomeScreen(
     val isSearching by viewModel.isSearching.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     var playerExpanded by remember { mutableStateOf(false) }
+    var selectedTab by rememberSaveable { mutableStateOf(0) }
 
     val currentSong by playerViewModel.currentSong.collectAsState()
     val hasActiveSong = currentSong.id.isNotEmpty()
 
-    val recentList = musicList.take(5)
+    val recentList = musicList.take(20)
     var backEnabled by remember { mutableStateOf(true) }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(playerExpanded) {
         if (!playerExpanded) {
@@ -105,14 +109,13 @@ fun MusicHomeScreen(
         }
     }
 
-
     AnimatedContent(
         targetState = showSplash,
         transitionSpec = { fadeIn() togetherWith fadeOut() },
         label = "splash_transition"
     ) { isSplash ->
         if (isSplash) {
-            Box(modifier = modifier.fillMaxSize()) {
+            Box(modifier = modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
                 Image(
                     painter = painterResource(id = R.drawable.music_splash_bg),
                     contentDescription = null,
@@ -146,6 +149,8 @@ fun MusicHomeScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.White)
+                        .statusBarsPadding()
+                        .navigationBarsPadding()
                 ) {
                     Row(
                         modifier = Modifier
@@ -185,8 +190,8 @@ fun MusicHomeScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(rememberScrollState(), enabled = searchQuery.isBlank())
-                            .padding(bottom = if (hasActiveSong) 120.dp else 24.dp),
+                            .verticalScroll(rememberScrollState())
+                                    .padding(bottom = if (hasActiveSong) 180.dp else 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -242,17 +247,16 @@ fun MusicHomeScreen(
                                         }
                                     }
                                     else -> {
-                                        searchResults.forEach { item ->
-                                            MusicListRow(item = item, onClick = {
-                                                val isFirstSong = !hasActiveSong
-                                                playerViewModel.loadSong(
-                                                    item.id,
-                                                    item.title ?: item.filename,
-                                                    item.artist ?: "Unknown Artist",
-                                                    (item.durationSec ?: 0) * 1000L
-                                                )
-                                                if (isFirstSong) playerExpanded = true
-                                            })
+                                        MusicListScrollable(items = searchResults) { item ->
+                                            val isFirstSong = !hasActiveSong
+                                            playerViewModel.loadSong(
+                                                item.id,
+                                                item.title ?: item.filename,
+                                                item.artist ?: "Unknown Artist",
+                                                (item.durationSec ?: 0) * 1000L
+                                            )
+                                            keyboardController?.hide()
+                                            if (isFirstSong) playerExpanded = true
                                         }
                                     }
                                 }
@@ -261,15 +265,60 @@ fun MusicHomeScreen(
 
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        Box(modifier = Modifier.width(332.dp)) {
-                            Text(
-                                text = "Recent",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Color(0xFFB30021)
-                            )
+                        Row(
+                            modifier = Modifier.width(332.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .border(
+                                        width = 1.dp,
+                                        color = Color(0xFFC70025),
+                                        shape = RoundedCornerShape(50.dp)
+                                    )
+                                    .background(
+                                        color = if (selectedTab == 0) Color(0xFFC70025) else Color.White,
+                                        shape = RoundedCornerShape(50.dp)
+                                    )
+                                    .clip(RoundedCornerShape(50.dp))
+                                    .clickable { selectedTab = 0 }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Recent",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = if (selectedTab == 0) Color.White else Color(0xFFC70025)
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .border(
+                                        width = 1.dp,
+                                        color = Color(0xFFC70025),
+                                        shape = RoundedCornerShape(50.dp)
+                                    )
+                                    .background(
+                                        color = if (selectedTab == 1) Color(0xFFC70025) else Color.White,
+                                        shape = RoundedCornerShape(50.dp)
+                                    )
+                                    .clip(RoundedCornerShape(50.dp))
+                                    .clickable { selectedTab = 1 }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "All",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = if (selectedTab == 1) Color.White else Color(0xFFC70025)
+                                )
+                            }
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
                         when {
                             isLoading -> {
@@ -296,122 +345,81 @@ fun MusicHomeScreen(
                                     )
                                 }
                             }
-                            recentList.isEmpty() -> {
-                                Box(
-                                    modifier = Modifier
-                                        .width(332.dp)
-                                        .padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "No recent music",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = Color(0xFF8E8D8D)
-                                    )
-                                }
-                            }
-                            else -> {
-                                Column(
-                                    modifier = Modifier
-                                        .width(332.dp)
-                                        .border(
-                                            width = 1.dp,
-                                            color = Color(0xFFC70025),
-                                            shape = RoundedCornerShape(24.dp)
+                            selectedTab == 0 -> {
+                                if (recentList.isEmpty()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .width(332.dp)
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "No recent music",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color(0xFF8E8D8D)
                                         )
-                                        .background(
-                                            color = Color.White,
-                                            shape = RoundedCornerShape(24.dp)
-                                        )
-                                ) {
-                                    recentList.forEach { item ->
-                                        MusicListRow(item = item, onClick = {
+                                    }
+                                } else {
+                                    Column(
+                                        modifier = Modifier
+                                            .width(332.dp)
+                                            .border(
+                                                width = 1.dp,
+                                                color = Color(0xFFC70025),
+                                                shape = RoundedCornerShape(24.dp)
+                                            )
+                                            .background(
+                                                color = Color.White,
+                                                shape = RoundedCornerShape(24.dp)
+                                            )
+                                    ) {
+                                        MusicListScrollable(items = recentList) { item ->
                                             val isFirstSong = !hasActiveSong
                                             playerViewModel.loadSongFromQueue(item, recentList)
                                             if (isFirstSong) playerExpanded = true
-                                        })
+                                        }
                                     }
                                 }
                             }
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Box(modifier = Modifier.width(332.dp)) {
-                            Text(
-                                text = "All",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Color(0xFFB30021)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        when {
-                            isLoading -> {
-                                Box(
-                                    modifier = Modifier
-                                        .width(332.dp)
-                                        .height(100.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator(color = Color(0xFFC70025))
-                                }
-                            }
-                            error != null -> {
-                                Box(
-                                    modifier = Modifier
-                                        .width(332.dp)
-                                        .padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "Error: $error",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = Color(0xFF8E8D8D)
-                                    )
-                                }
-                            }
-                            musicList.isEmpty() -> {
-                                Box(
-                                    modifier = Modifier
-                                        .width(332.dp)
-                                        .padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "No music found",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = Color(0xFF8E8D8D)
-                                    )
-                                }
-                            }
-                            else -> {
-                                Column(
-                                    modifier = Modifier
-                                        .width(332.dp)
-                                        .border(
-                                            width = 1.dp,
-                                            color = Color(0xFFC70025),
-                                            shape = RoundedCornerShape(24.dp)
+                            selectedTab == 1 -> {
+                                if (musicList.isEmpty()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .width(332.dp)
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "No music found",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color(0xFF8E8D8D)
                                         )
-                                        .background(
-                                            color = Color.White,
-                                            shape = RoundedCornerShape(24.dp)
-                                        )
-                                ) {
-                                    musicList.forEach { item ->
-                                        MusicListRow(item = item, onClick = {
+                                    }
+                                } else {
+                                    Column(
+                                        modifier = Modifier
+                                            .width(332.dp)
+                                            .border(
+                                                width = 1.dp,
+                                                color = Color(0xFFC70025),
+                                                shape = RoundedCornerShape(24.dp)
+                                            )
+                                            .background(
+                                                color = Color.White,
+                                                shape = RoundedCornerShape(24.dp)
+                                            )
+                                    ) {
+                                        MusicListScrollable(items = musicList) { item ->
                                             val isFirstSong = !hasActiveSong
                                             playerViewModel.loadSongFromQueue(item, musicList)
                                             if (isFirstSong) playerExpanded = true
-                                        })
+                                        }
                                     }
                                 }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(48.dp))
 
                         Box(modifier = Modifier.width(332.dp)) {
                             Text(
@@ -421,7 +429,7 @@ fun MusicHomeScreen(
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),

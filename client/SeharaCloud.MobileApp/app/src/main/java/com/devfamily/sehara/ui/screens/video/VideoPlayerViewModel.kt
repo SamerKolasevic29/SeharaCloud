@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 enum class VideoPlayerMode {
-    HIDDEN, FLOATING, FULLSCREEN
+    HIDDEN, FLOATING, PORTRAIT, FULLSCREEN
 }
 
 data class VideoUiModel(
@@ -45,6 +45,9 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
 
     private val _hasNext = MutableStateFlow(false)
     val hasNextFlow: StateFlow<Boolean> = _hasNext.asStateFlow()
+
+    private val _categoryQueue = MutableStateFlow<List<VideoItem>>(emptyList())
+    val categoryQueue: StateFlow<List<VideoItem>> = _categoryQueue.asStateFlow()
 
     private var queue: List<VideoItem> = emptyList()
     private var currentQueueIndex: Int = -1
@@ -94,6 +97,9 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
         _hasPrevious.value = currentQueueIndex > 0
         _hasNext.value = currentQueueIndex < queue.size - 1
 
+        val categoryItems = queueList.filter { it.category == item.category }
+        _categoryQueue.value = categoryItems
+
         _currentVideo.value = VideoUiModel(
             id = item.id,
             title = if (item.title.isBlank()) item.filename else item.title,
@@ -109,7 +115,7 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
         exoPlayer.prepare()
         exoPlayer.play()
         _isPlaying.value = true
-        _playerMode.value = VideoPlayerMode.FULLSCREEN
+        _playerMode.value = VideoPlayerMode.PORTRAIT
     }
 
     fun skipNext() {
@@ -154,13 +160,21 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
         _playerMode.value = VideoPlayerMode.HIDDEN
         queue = emptyList()
         currentQueueIndex = -1
+        _categoryQueue.value = emptyList()
     }
 
     fun formatTime(ms: Long): String {
         val totalSeconds = ms / 1000
-        val minutes = totalSeconds / 60
+        val hours = totalSeconds / 3600
+        val minutes = (totalSeconds % 3600) / 60
         val seconds = totalSeconds % 60
-        return "%02d:%02d".format(minutes, seconds)
+
+        return if (hours > 0) {
+
+            "%02d:%02d:%02d".format(hours, minutes, seconds)
+        } else {
+            "%02d:%02d".format(minutes, seconds)
+        }
     }
 
     override fun onCleared() {

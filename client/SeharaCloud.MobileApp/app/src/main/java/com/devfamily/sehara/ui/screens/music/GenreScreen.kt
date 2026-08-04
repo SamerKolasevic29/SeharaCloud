@@ -45,6 +45,8 @@ import androidx.compose.foundation.border
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.activity.compose.BackHandler
 import com.devfamily.sehara.ui.components.MusicPlayerOverlay
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 
 @Composable
 fun GenreScreen(
@@ -88,7 +90,7 @@ fun GenreScreen(
         label = "genre_splash_transition"
     ) { isSplash ->
         if (isSplash) {
-            Box(modifier = modifier.fillMaxSize()) {
+            Box(modifier = modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
                 Image(
                     painter = painterResource(id = R.drawable.music_genre_splash_bg),
                     contentDescription = null,
@@ -110,6 +112,8 @@ fun GenreScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.White)
+                        .statusBarsPadding()
+                        .navigationBarsPadding()
                 ) {
                     Row(
                         modifier = Modifier

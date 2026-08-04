@@ -1,6 +1,7 @@
-package com.devfamily.sehara.ui.screens.music
+package com.devfamily.sehara.ui.screens.video
 
-import androidx.activity.compose.BackHandler
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -30,6 +31,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,50 +43,71 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.devfamily.sehara.R
-import com.devfamily.sehara.ui.components.CategoryCard
-import com.devfamily.sehara.ui.components.MusicPlayerOverlay
 import com.devfamily.sehara.ui.components.SearchBar
+import com.devfamily.sehara.ui.components.VideoListRow
+import com.devfamily.sehara.ui.components.VideoPlayerOverlay
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
+
+private data class VideoCategoryUi(
+    val title: String,
+    val splashBg: Int,
+    val emptyMessage: String
+)
+
+private fun VideoCategory.toUi(): VideoCategoryUi = when (this) {
+    VideoCategory.MOVIE -> VideoCategoryUi(
+        title = "Movie",
+        splashBg = R.drawable.video_movie_splash_bg,
+        emptyMessage = "No movies found"
+    )
+    VideoCategory.DOCUMENTARY -> VideoCategoryUi(
+        title = "Documentary",
+        splashBg = R.drawable.video_movie_splash_bg,
+        emptyMessage = "No documentaries found"
+    )
+    VideoCategory.OTHER -> VideoCategoryUi(
+        title = "Other",
+        splashBg = R.drawable.video_movie_splash_bg,
+        emptyMessage = "No videos found"
+    )
+}
 
 @Composable
-fun ArtistScreen(
+fun VideoCategoryScreen(
     modifier: Modifier = Modifier,
+    category: VideoCategory,
     showInitialSplash: Boolean = true,
     onBackClick: () -> Unit = {},
-    onArtistClick: (id: String, name: String) -> Unit = { _, _ -> },
-    viewModel: ArtistViewModel = viewModel(),
-    playerViewModel: MusicPlayerViewModel
+    viewModel: VideoCategoryViewModel = viewModel(),
+    playerViewModel: VideoPlayerViewModel = viewModel()
 ) {
     var showSplash by rememberSaveable { mutableStateOf(showInitialSplash) }
-    var searchQuery by remember { mutableStateOf("") }
-    val searchResults by viewModel.searchResults.collectAsState()
-    val isSearching by viewModel.isSearching.collectAsState()
-    val artists by viewModel.artists.collectAsState()
+    val videoList by viewModel.videoList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
-    val currentSong by playerViewModel.currentSong.collectAsState()
-    val hasActiveSong = currentSong.id.isNotEmpty()
-    var playerExpanded by remember { mutableStateOf(false) }
-    var backEnabled by remember { mutableStateOf(true) }
+    val searchResults by viewModel.searchResults.collectAsState()
+    val isSearching by viewModel.isSearching.collectAsState()
+    var searchQuery by remember { mutableStateOf("") }
+    val playerMode by playerViewModel.playerMode.collectAsState()
+    val keyboardController = LocalSoftwareKeyboardController.current
 
-    LaunchedEffect(playerExpanded) {
-        if (!playerExpanded) {
-            backEnabled = false
-            delay(2000)
-            backEnabled = true
-        }
+    val ui = category.toUi()
+
+    LaunchedEffect(category) {
+        viewModel.loadCategory(category)
     }
 
     LaunchedEffect(Unit) {
         if (showInitialSplash) {
-            delay(1000)
+            delay(2000)
             showSplash = false
         } else {
             showSplash = false
@@ -96,29 +119,42 @@ fun ArtistScreen(
             viewModel.clearSearch()
         } else {
             delay(300)
-            viewModel.searchArtists(searchQuery)
+            viewModel.search(searchQuery)
         }
     }
 
-    BackHandler(enabled = playerExpanded) {
-        playerExpanded = false
+    val context = LocalContext.current
+    LaunchedEffect(playerMode) {
+        val activity = context as? Activity
+        if (playerMode == VideoPlayerMode.FULLSCREEN) {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        } else {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            val activity = context as? Activity
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
     }
 
     AnimatedContent(
         targetState = showSplash,
         transitionSpec = { fadeIn() togetherWith fadeOut() },
-        label = "artist_splash_transition"
+        label = "video_category_splash_transition"
     ) { isSplash ->
         if (isSplash) {
             Box(modifier = modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
-            Image(
-                    painter = painterResource(id = R.drawable.music_artist_card),
+                Image(
+                    painter = painterResource(id = ui.splashBg),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
                 Text(
-                    text = "Artist",
+                    text = ui.title,
                     style = MaterialTheme.typography.displayLarge,
                     color = Color.White,
                     modifier = Modifier
@@ -135,11 +171,23 @@ fun ArtistScreen(
                         .statusBarsPadding()
                         .navigationBarsPadding()
                 ) {
+                    if (playerMode == VideoPlayerMode.PORTRAIT) {
+                        VideoPlayerOverlay(
+                            viewModel = playerViewModel,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color.White)
-                            .padding(start = 32.dp, top = 32.dp, end = 32.dp, bottom = 12.dp),
+                            .padding(
+                                start = 32.dp,
+                                top = if (playerMode == VideoPlayerMode.PORTRAIT) 16.dp else 32.dp,
+                                end = 32.dp,
+                                bottom = 12.dp
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -148,10 +196,10 @@ fun ArtistScreen(
                             contentDescription = null,
                             modifier = Modifier
                                 .size(36.dp)
-                                .clickable(enabled = backEnabled) { onBackClick() }
+                                .clickable { onBackClick() }
                         )
                         Text(
-                            text = "Artist",
+                            text = ui.title,
                             style = MaterialTheme.typography.displayMedium,
                             color = Color(0xFF999999)
                         )
@@ -161,16 +209,15 @@ fun ArtistScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(bottom = if (hasActiveSong) 220.dp else 24.dp),
+                            .verticalScroll(rememberScrollState(), enabled = searchQuery.isBlank())
+                            .padding(bottom = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         SearchBar(
                             query = searchQuery,
-                            onQueryChange = { searchQuery = it },
-                            placeholder = "Search artists"
+                            onQueryChange = { searchQuery = it }
                         )
 
                         AnimatedVisibility(
@@ -219,19 +266,13 @@ fun ArtistScreen(
                                         }
                                     }
                                     else -> {
-                                        searchResults.forEach { artist ->
-                                            Text(
-                                                text = artist.name,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = Color(0xFF333333),
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clickable {
-                                                        onArtistClick(artist.id, artist.name)
-                                                        searchQuery = ""
-                                                        viewModel.clearSearch()
-                                                    }
-                                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                                        searchResults.forEach { item ->
+                                            VideoListRow(
+                                                item = item,
+                                                onClick = {
+                                                    keyboardController?.hide()
+                                                    playerViewModel.loadVideo(item, searchResults)
+                                                }
                                             )
                                         }
                                     }
@@ -244,95 +285,83 @@ fun ArtistScreen(
                         when {
                             isLoading -> {
                                 Box(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .width(332.dp)
+                                        .height(100.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     CircularProgressIndicator(color = Color(0xFFC70025))
                                 }
                             }
                             error != null -> {
-                                Text(
-                                    text = "Error: $error",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.Red,
-                                    modifier = Modifier.padding(16.dp)
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .width(332.dp)
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "Error: $error",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color(0xFF8E8D8D)
+                                    )
+                                }
+                            }
+                            videoList.isEmpty() -> {
+                                Box(
+                                    modifier = Modifier
+                                        .width(332.dp)
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = ui.emptyMessage,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color(0xFF8E8D8D)
+                                    )
+                                }
                             }
                             else -> {
                                 Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    modifier = Modifier
+                                        .width(332.dp)
+                                        .border(
+                                            width = 1.dp,
+                                            color = Color(0xFFC70025),
+                                            shape = RoundedCornerShape(24.dp)
+                                        )
+                                        .background(
+                                            color = Color.White,
+                                            shape = RoundedCornerShape(24.dp)
+                                        )
                                 ) {
-                                    artists.chunked(2).forEach { rowArtists ->
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(0.dp)
-                                        ) {
-                                            rowArtists.forEachIndexed { index, artist ->
-                                                val shape = if (index == 0) {
-                                                    RoundedCornerShape(
-                                                        topStart = 0.dp,
-                                                        topEnd = 32.dp,
-                                                        bottomEnd = 32.dp,
-                                                        bottomStart = 0.dp
-                                                    )
-                                                } else {
-                                                    RoundedCornerShape(
-                                                        topStart = 32.dp,
-                                                        topEnd = 0.dp,
-                                                        bottomEnd = 0.dp,
-                                                        bottomStart = 32.dp
-                                                    )
-                                                }
-
-                                                // --- REZOLUCIJA TRIKA: Određujemo offset ovisno o strani ---
-                                                val borderOffset = if (index == 0) (-1).dp else 1.dp
-
-                                                CategoryCard(
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .offset(x = borderOffset)
-                                                        .border(
-                                                            width = 1.dp,
-                                                            color = Color(0xFFC70025),
-                                                            shape = shape
-                                                        ),
-                                                    shape = shape,
-                                                    backgroundImage = R.drawable.music_genre_splash_bg,
-                                                    backgroundUrl = artist.thumbnailUrl,
-                                                    label = "",
-                                                    onClick = { onArtistClick(artist.id, artist.name) },
-                                                    bottomStartContent = {}
-                                                )
-
-                                                if (index == 0 && rowArtists.size == 2) {
-                                                    Spacer(modifier = Modifier.width(14.dp))
-                                                }
+                                    videoList.forEach { item ->
+                                        VideoListRow(
+                                            item = item,
+                                            onClick = {
+                                                playerViewModel.loadVideo(item, videoList)
                                             }
-
-                                            if (rowArtists.size == 1) {
-                                                Spacer(modifier = Modifier.weight(1f))
-                                            }
-                                        }
+                                        )
                                     }
                                 }
                             }
                         }
+
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
 
-                if (hasActiveSong) {
-                    Box(modifier = Modifier.align(Alignment.BottomCenter)) {
-                        MusicPlayerOverlay(
-                            viewModel = playerViewModel,
-                            isExpanded = playerExpanded,
-                            onExpandChange = { playerExpanded = it },
-                            onClose = {
-                                playerViewModel.closePlayer()
-                                playerExpanded = false
-                            }
-                        )
-                    }
+                if (playerMode == VideoPlayerMode.FLOATING) {
+                    VideoPlayerOverlay(
+                        viewModel = playerViewModel
+                    )
+                }
+
+                if (playerMode == VideoPlayerMode.FULLSCREEN) {
+                    VideoPlayerOverlay(
+                        viewModel = playerViewModel,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
         }

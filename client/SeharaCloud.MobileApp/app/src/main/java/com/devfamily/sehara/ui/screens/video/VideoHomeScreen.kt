@@ -1,6 +1,7 @@
-package com.devfamily.sehara.ui.screens.music
+package com.devfamily.sehara.ui.screens.video
 
-import androidx.activity.compose.BackHandler
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -30,6 +31,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -42,54 +44,43 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.devfamily.sehara.R
 import com.devfamily.sehara.ui.components.CategoryCard
-import com.devfamily.sehara.ui.components.MusicListScrollable
-import com.devfamily.sehara.ui.components.MusicPlayerOverlay
 import com.devfamily.sehara.ui.components.SearchBar
+import com.devfamily.sehara.ui.components.VideoListScrollable
+import com.devfamily.sehara.ui.components.VideoPlayerOverlay
 import kotlinx.coroutines.delay
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.draw.clip
 
 @Composable
-fun MusicHomeScreen(
+fun VideoHomeScreen(
     modifier: Modifier = Modifier,
     showInitialSplash: Boolean = true,
     onBackClick: () -> Unit = {},
-    onArtistClick: () -> Unit = {},
-    onGenreClick: () -> Unit = {},
-    viewModel: MusicViewModel = viewModel(),
-    playerViewModel: MusicPlayerViewModel
+    onMovieClick: () -> Unit = {},
+    onOtherClick: () -> Unit = {},
+    onDocumentaryClick: () -> Unit = {},
+    viewModel: VideoViewModel = viewModel(),
+    playerViewModel: VideoPlayerViewModel = viewModel()
 ) {
     var showSplash by rememberSaveable { mutableStateOf(showInitialSplash) }
-    val musicList by viewModel.musicList.collectAsState()
+    val videoList by viewModel.videoList.collectAsState()
+    val recentList by viewModel.recentList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
-    var playerExpanded by remember { mutableStateOf(false) }
+    val playerMode by playerViewModel.playerMode.collectAsState()
     var selectedTab by rememberSaveable { mutableStateOf(0) }
-
-    val currentSong by playerViewModel.currentSong.collectAsState()
-    val hasActiveSong = currentSong.id.isNotEmpty()
-
-    val recentList = musicList.take(20)
-    var backEnabled by remember { mutableStateOf(true) }
     val keyboardController = LocalSoftwareKeyboardController.current
-
-    LaunchedEffect(playerExpanded) {
-        if (!playerExpanded) {
-            backEnabled = false
-            delay(2000)
-            backEnabled = true
-        }
-    }
 
     LaunchedEffect(Unit) {
         if (showInitialSplash) {
@@ -105,7 +96,24 @@ fun MusicHomeScreen(
             viewModel.clearSearch()
         } else {
             delay(300)
-            viewModel.searchMusic(searchQuery)
+            viewModel.searchVideos(searchQuery)
+        }
+    }
+
+    val context = LocalContext.current
+    LaunchedEffect(playerMode) {
+        val activity = context as? Activity
+        if (playerMode == VideoPlayerMode.FULLSCREEN) {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        } else {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            val activity = context as? Activity
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
     }
 
@@ -117,7 +125,7 @@ fun MusicHomeScreen(
         if (isSplash) {
             Box(modifier = modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
                 Image(
-                    painter = painterResource(id = R.drawable.music_splash_bg),
+                    painter = painterResource(id = R.drawable.video_splash_bg),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -128,22 +136,19 @@ fun MusicHomeScreen(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.ic_music),
+                        painter = painterResource(id = R.drawable.ic_video),
                         contentDescription = null,
                         modifier = Modifier.size(64.dp)
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
-                        text = "Music",
+                        text = "Video",
                         style = MaterialTheme.typography.displayLarge,
                         color = Color.White
                     )
                 }
             }
         } else {
-            BackHandler(enabled = playerExpanded) {
-                playerExpanded = false
-            }
             Box(modifier = modifier.fillMaxSize()) {
                 Column(
                     modifier = Modifier
@@ -152,11 +157,23 @@ fun MusicHomeScreen(
                         .statusBarsPadding()
                         .navigationBarsPadding()
                 ) {
+                    if (playerMode == VideoPlayerMode.PORTRAIT) {
+                        VideoPlayerOverlay(
+                            viewModel = playerViewModel,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color.White)
-                            .padding(start = 32.dp, top = 32.dp, end = 32.dp, bottom = 12.dp),
+                            .padding(
+                                start = 32.dp,
+                                top = if (playerMode == VideoPlayerMode.PORTRAIT) 16.dp else 32.dp,
+                                end = 32.dp,
+                                bottom = 12.dp
+                            ),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -165,20 +182,20 @@ fun MusicHomeScreen(
                             contentDescription = null,
                             modifier = Modifier
                                 .size(36.dp)
-                                .clickable(enabled = backEnabled) { onBackClick() }
+                                .clickable { onBackClick() }
                         )
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = "Music",
+                                text = "Video",
                                 style = MaterialTheme.typography.displayMedium,
                                 color = Color(0xFF999999)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Image(
-                                painter = painterResource(id = R.drawable.ic_music),
+                                painter = painterResource(id = R.drawable.ic_video),
                                 contentDescription = null,
                                 modifier = Modifier.size(30.dp),
                                 colorFilter = ColorFilter.tint(Color(0xFF9F001E))
@@ -191,7 +208,7 @@ fun MusicHomeScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
-                                    .padding(bottom = if (hasActiveSong) 180.dp else 24.dp),
+                            .padding(bottom = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -247,16 +264,9 @@ fun MusicHomeScreen(
                                         }
                                     }
                                     else -> {
-                                        MusicListScrollable(items = searchResults) { item ->
-                                            val isFirstSong = !hasActiveSong
-                                            playerViewModel.loadSong(
-                                                item.id,
-                                                item.title ?: item.filename,
-                                                item.artist ?: "Unknown Artist",
-                                                (item.durationSec ?: 0) * 1000L
-                                            )
+                                        VideoListScrollable(items = searchResults) { item ->
                                             keyboardController?.hide()
-                                            if (isFirstSong) playerExpanded = true
+                                            playerViewModel.loadVideo(item, searchResults)
                                         }
                                     }
                                 }
@@ -354,7 +364,7 @@ fun MusicHomeScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            text = "No recent music",
+                                            text = "No recent videos",
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = Color(0xFF8E8D8D)
                                         )
@@ -373,16 +383,14 @@ fun MusicHomeScreen(
                                                 shape = RoundedCornerShape(24.dp)
                                             )
                                     ) {
-                                        MusicListScrollable(items = recentList) { item ->
-                                            val isFirstSong = !hasActiveSong
-                                            playerViewModel.loadSongFromQueue(item, recentList)
-                                            if (isFirstSong) playerExpanded = true
+                                        VideoListScrollable(items = recentList) { item ->
+                                            playerViewModel.loadVideo(item, recentList)
                                         }
                                     }
                                 }
                             }
                             selectedTab == 1 -> {
-                                if (musicList.isEmpty()) {
+                                if (videoList.isEmpty()) {
                                     Box(
                                         modifier = Modifier
                                             .width(332.dp)
@@ -390,7 +398,7 @@ fun MusicHomeScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            text = "No music found",
+                                            text = "No videos found",
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = Color(0xFF8E8D8D)
                                         )
@@ -409,10 +417,8 @@ fun MusicHomeScreen(
                                                 shape = RoundedCornerShape(24.dp)
                                             )
                                     ) {
-                                        MusicListScrollable(items = musicList) { item ->
-                                            val isFirstSong = !hasActiveSong
-                                            playerViewModel.loadSongFromQueue(item, musicList)
-                                            if (isFirstSong) playerExpanded = true
+                                        VideoListScrollable(items = videoList) { item ->
+                                            playerViewModel.loadVideo(item, videoList)
                                         }
                                     }
                                 }
@@ -437,34 +443,54 @@ fun MusicHomeScreen(
                         ) {
                             CategoryCard(
                                 modifier = Modifier.weight(1f),
-                                backgroundImage = R.drawable.music_artist_card,
-                                label = "Artist",
-                                onClick = onArtistClick
+                                backgroundImage = R.drawable.video_movie_card,
+                                label = "Movie",
+                                onClick = onMovieClick
                             )
                             CategoryCard(
                                 modifier = Modifier.weight(1f),
-                                backgroundImage = R.drawable.music_genre_card,
-                                label = "Genre",
-                                onClick = onGenreClick
+                                backgroundImage = R.drawable.video_other_card,
+                                label = "Other",
+                                onClick = onOtherClick
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.75f)
+                                .height(180.dp)
+                                .clickable { onDocumentaryClick() },
+                            contentAlignment = Alignment.BottomCenter
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.video_documentary_card),
+                                contentDescription = null,
+                                contentScale = ContentScale.FillBounds,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            Text(
+                                text = "Documentary",
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleLarge,
+                                modifier = Modifier.padding(bottom = 14.dp)
+                            )
+                        }
                     }
                 }
 
-                if (hasActiveSong) {
-                    Box(modifier = Modifier.align(Alignment.BottomCenter)) {
-                        MusicPlayerOverlay(
-                            viewModel = playerViewModel,
-                            isExpanded = playerExpanded,
-                            onExpandChange = { playerExpanded = it },
-                            onClose = {
-                                playerViewModel.closePlayer()
-                                playerExpanded = false
-                            }
-                        )
-                    }
+                if (playerMode == VideoPlayerMode.FLOATING) {
+                    VideoPlayerOverlay(
+                        viewModel = playerViewModel
+                    )
+                }
+
+                if (playerMode == VideoPlayerMode.FULLSCREEN) {
+                    VideoPlayerOverlay(
+                        viewModel = playerViewModel,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
         }

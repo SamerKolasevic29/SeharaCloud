@@ -1,6 +1,6 @@
 package com.devfamily.sehara.data
 
-data class FileItem(
+data class SongItem(
     val id: String,
     val filename: String,
     val thumbnailUrl: String?,

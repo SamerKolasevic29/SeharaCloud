@@ -32,7 +32,9 @@ import com.devfamily.sehara.ui.components.CategoryCard
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    onMusicClick: () -> Unit
+    onMusicClick: () -> Unit,
+    onVideoClick: () -> Unit,
+    onDocsClick: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -66,7 +68,7 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f).padding(end = 4.dp),
                     backgroundImage = R.drawable.home_video_card,
                     label = "Video",
-                    onClick = {},
+                    onClick = onVideoClick,
                     bottomStartContent = {
                         Image(
                             painter = painterResource(id = R.drawable.ic_video),
@@ -116,7 +118,7 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f).padding(start = 4.dp),
                     backgroundImage = R.drawable.home_docs_card,
                     label = "Docs",
-                    onClick = {},
+                    onClick = onDocsClick,
                     bottomStartContent = {
                         Image(
                             painter = painterResource(id = R.drawable.ic_docs),

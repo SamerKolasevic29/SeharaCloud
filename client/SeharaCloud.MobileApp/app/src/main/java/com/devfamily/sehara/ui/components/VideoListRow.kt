@@ -3,7 +3,6 @@ package com.devfamily.sehara.ui.components
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -36,21 +34,21 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.devfamily.sehara.R
-import com.devfamily.sehara.data.SongItem
+import com.devfamily.sehara.data.VideoItem
 
-private val ROW_HEIGHT = 70.dp
-private const val MAX_VISIBLE_ITEMS = 5
-private val MUSIC_ROW_SHAPE = RoundedCornerShape(16.dp)
+private val VIDEO_ROW_HEIGHT = 70.dp
+private const val VIDEO_MAX_VISIBLE_ITEMS = 5
+private val VIDEO_ROW_SHAPE = RoundedCornerShape(16.dp)
 
 @Composable
-fun MusicListRow(item: SongItem, onClick: () -> Unit = {}) {
+fun VideoListRow(item: VideoItem, onClick: () -> Unit = {}) {
     val interactionSource = remember { MutableInteractionSource() }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(ROW_HEIGHT)
-            .clip(MUSIC_ROW_SHAPE)
+            .height(VIDEO_ROW_HEIGHT)
+            .clip(VIDEO_ROW_SHAPE)
             .clickable(
                 interactionSource = interactionSource,
                 indication = ripple(color = Color(0xFFC70025)),
@@ -69,42 +67,35 @@ fun MusicListRow(item: SongItem, onClick: () -> Unit = {}) {
             contentDescription = null,
             modifier = Modifier
                 .size(40.dp)
-                .clip(CircleShape),
+                .clip(RoundedCornerShape(8.dp)),
             contentScale = ContentScale.Crop,
-            error = painterResource(id = R.drawable.ic_unknown_artist),
-            placeholder = painterResource(id = R.drawable.ic_unknown_artist),
-            fallback = painterResource(id = R.drawable.ic_unknown_artist)
+            error = painterResource(id = R.drawable.ic_unknown_video),
+            placeholder = painterResource(id = R.drawable.ic_unknown_video),
+            fallback = painterResource(id = R.drawable.ic_unknown_video)
         )
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = item.title ?: item.filename,
-                style = MaterialTheme.typography.titleSmall,
-                color = Color(0xFFC70025),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = listOfNotNull(item.artist, item.genre).joinToString(" / "),
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF8E8D8D),
-                maxLines = 1
-            )
-        }
+        Text(
+            text = item.title,
+            style = MaterialTheme.typography.titleSmall,
+            color = Color(0xFFC70025),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
 @Composable
-fun MusicListScrollable(
-    items: List<SongItem>,
-    onItemClick: (SongItem) -> Unit
+fun VideoListScrollable(
+    items: List<VideoItem>,
+    onItemClick: (VideoItem) -> Unit
 ) {
     val listState = rememberLazyListState()
 
     val nestedScrollConnection = remember(listState) {
         object : NestedScrollConnection {
+
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 return Offset.Zero
             }
@@ -122,11 +113,11 @@ fun MusicListScrollable(
     LazyColumn(
         state = listState,
         modifier = Modifier
-            .heightIn(max = ROW_HEIGHT * MAX_VISIBLE_ITEMS)
+            .heightIn(max = VIDEO_ROW_HEIGHT * VIDEO_MAX_VISIBLE_ITEMS)
             .nestedScroll(nestedScrollConnection)
     ) {
         items(items, key = { it.id }) { item ->
-            MusicListRow(item = item, onClick = { onItemClick(item) })
+            VideoListRow(item = item, onClick = { onItemClick(item) })
         }
     }
 }

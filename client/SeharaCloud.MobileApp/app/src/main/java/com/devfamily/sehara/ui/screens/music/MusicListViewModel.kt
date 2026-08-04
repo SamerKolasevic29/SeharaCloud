@@ -2,7 +2,7 @@ package com.devfamily.sehara.ui.screens.music
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devfamily.sehara.data.FileItem
+import com.devfamily.sehara.data.SongItem
 import com.devfamily.sehara.data.RetrofitClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,8 +11,8 @@ import kotlinx.coroutines.launch
 
 class MusicListViewModel : ViewModel() {
 
-    private val _songs = MutableStateFlow<List<FileItem>>(emptyList())
-    val songs: StateFlow<List<FileItem>> = _songs.asStateFlow()
+    private val _songs = MutableStateFlow<List<SongItem>>(emptyList())
+    val songs: StateFlow<List<SongItem>> = _songs.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()

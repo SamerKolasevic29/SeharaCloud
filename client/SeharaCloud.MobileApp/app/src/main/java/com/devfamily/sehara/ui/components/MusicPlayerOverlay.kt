@@ -58,7 +58,8 @@ import com.devfamily.sehara.R
 import com.devfamily.sehara.ui.screens.music.MusicPlayerViewModel
 import kotlin.math.roundToInt
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -111,6 +112,8 @@ fun MusicPlayerOverlay(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 32.dp)
+                        .statusBarsPadding()
+                        .navigationBarsPadding()
                 ) {
                     Spacer(modifier = Modifier.height(32.dp))
 

@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import com.devfamily.sehara.data.FileItem
+import com.devfamily.sehara.data.SongItem
 import com.devfamily.sehara.data.RetrofitClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,7 +39,7 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
     private val _hasNext = MutableStateFlow(false)
     val hasNextFlow: StateFlow<Boolean> = _hasNext.asStateFlow()
 
-    private var queue: List<FileItem> = emptyList()
+    private var queue: List<SongItem> = emptyList()
     private var currentQueueIndex: Int = -1
 
     val hasPrevious: Boolean get() = currentQueueIndex > 0
@@ -55,14 +55,7 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
 
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_ENDED) {
-                    if (hasNext) {
-                        skipNext()
-                    } else {
-                        _isPlaying.value = false
-                        _currentPosition.value = 0L
-                        exoPlayer.seekTo(0)
-                        exoPlayer.pause()
-                    }
+                    skipNext()
                 }
             }
         })
@@ -100,7 +93,7 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         _isPlaying.value = true
     }
 
-    fun loadSongFromQueue(item: FileItem, queueList: List<FileItem>) {
+    fun loadSongFromQueue(item: SongItem, queueList: List<SongItem>) {
         queue = queueList
         currentQueueIndex = queueList.indexOfFirst { it.id == item.id }
         _hasPrevious.value = currentQueueIndex > 0
@@ -115,19 +108,25 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun skipNext() {
+        if (queue.isEmpty()) return
+
         if (hasNext) {
             currentQueueIndex++
-            val item = queue[currentQueueIndex]
-            _hasPrevious.value = currentQueueIndex > 0
-            _hasNext.value = currentQueueIndex < queue.size - 1
-            loadSong(
-                item.id,
-                item.title ?: item.filename,
-                item.artist ?: "Unknown Artist",
-                (item.durationSec ?: 0) * 1000L,
-                item.thumbnailUrl
-            )
+        } else {
+            currentQueueIndex = 0
         }
+
+        val item = queue[currentQueueIndex]
+        _hasPrevious.value = currentQueueIndex > 0
+        _hasNext.value = currentQueueIndex < queue.size - 1
+
+        loadSong(
+            item.id,
+            item.title ?: item.filename,
+            item.artist ?: "Unknown Artist",
+            (item.durationSec ?: 0) * 1000L,
+            item.thumbnailUrl
+        )
     }
 
     fun skipPrevious() {

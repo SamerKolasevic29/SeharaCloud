@@ -29,4 +29,8 @@ sealed class Routes(val route: String) {
     object VideoCategory : Routes("video_category/{category}") {
         fun createRoute(category: String) = "video_category/$category"
     }
+
+    object PhotoViewer : Routes("photo_viewer/{index}") {
+        fun createRoute(index: Int) = "photo_viewer/$index"
+    }
 }

@@ -34,7 +34,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     onMusicClick: () -> Unit,
     onVideoClick: () -> Unit,
-    onDocsClick: () -> Unit
+    onDocsClick: () -> Unit,
+    onPhotoClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -104,7 +105,7 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f).padding(end = 4.dp),
                     backgroundImage = R.drawable.home_photo_card,
                     label = "Photo",
-                    onClick = {},
+                    onClick = onPhotoClick,
                     bottomStartContent = {
                         Image(
                             painter = painterResource(id = R.drawable.ic_photo),

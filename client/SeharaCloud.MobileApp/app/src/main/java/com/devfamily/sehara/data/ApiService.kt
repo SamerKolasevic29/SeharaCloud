@@ -52,12 +52,11 @@ interface ApiService {
     @GET("api/videos/search")
     suspend fun searchVideos(@Query("q") term: String): List<VideoItem>
 
-    @GET("api/photos")
-    suspend fun getImages(): List<SongItem>
+    @GET("api/images")
+    suspend fun getImages(): List<PhotoItem>
 
-    @GET("api/photos/{id}")
-    suspend fun getImageById(@Path("id") id: String): SongItem
-
+    @GET("api/images/{id}")
+    suspend fun getImageById(@Path("id") id: String): PhotoItem
     @GET("api/docs")
     suspend fun getDocuments(): List<DocumentItem>
 

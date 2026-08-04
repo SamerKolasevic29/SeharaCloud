@@ -23,11 +23,15 @@ import com.devfamily.sehara.ui.screens.docs.DocumentsScreen
 import com.devfamily.sehara.ui.screens.docs.DocumentViewerScreen
 import com.devfamily.sehara.ui.screens.docs.DocsCategoryScreen
 import com.devfamily.sehara.ui.screens.docs.DocsCategory
+import com.devfamily.sehara.ui.screens.photo.PhotoScreen
+import com.devfamily.sehara.ui.screens.photo.PhotoViewerScreen
+import com.devfamily.sehara.ui.screens.photo.PhotoViewModel
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     val playerViewModel: MusicPlayerViewModel = viewModel()
+    val photoViewModel: PhotoViewModel = viewModel()
 
     NavHost(
         navController = navController,
@@ -49,7 +53,8 @@ fun AppNavigation() {
                     navController.navigate(Routes.Music.route)
                 },
                 onVideoClick = { navController.navigate(Routes.Video.route) },
-                onDocsClick = { navController.navigate(Routes.Docs.route) }
+                onDocsClick = { navController.navigate(Routes.Docs.route) },
+                onPhotoClick = { navController.navigate(Routes.Photo.route) }
             )
         }
 
@@ -156,6 +161,32 @@ fun AppNavigation() {
                 onBackClick = { navController.popBackStack() }
             )
         }
+
+        composable(Routes.Photo.route) {
+            PhotoScreen(
+                onBackClick = { navController.popBackStack() },
+                onPhotoClick = { index ->
+                    navController.navigate(Routes.PhotoViewer.createRoute(index))
+                },
+                viewModel = photoViewModel
+            )
+        }
+
+        composable(
+            route = Routes.PhotoViewer.route,
+            arguments = listOf(
+                navArgument("index") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val index = backStackEntry.arguments?.getInt("index") ?: 0
+
+            PhotoViewerScreen(
+                viewModel = photoViewModel,
+                initialIndex = index,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
         composable(Routes.Artist.route) {
             ArtistScreen(
                 showInitialSplash = true,

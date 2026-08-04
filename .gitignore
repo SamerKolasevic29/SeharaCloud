@@ -2,6 +2,7 @@
 bin/
 obj/
 *.user
+appsettings.Development.json
 
 # C++
 build/
@@ -21,3 +22,20 @@ Thumbs.db
 .vscode/
 .idea/
 *.suo
+
+# KOTLIN
+*.iml
+local.properties
+.gradle/
+*.apk
+*.aab
+*.ap_
+*.dex
+captures/
+.externalNativeBuild/
+.cxx/
+**/app/release/
+*.dm
+output-metadata.json
+**/Secrets.kt
+

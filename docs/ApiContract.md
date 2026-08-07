@@ -1,6 +1,3 @@
-
-# API Contract (Updated)
-
 ## Music API
 ### GET /api/music
 Returns all music files, sorted alphabetically.
@@ -32,21 +29,6 @@ Returns a list of all video files.
 ### GET /api/videos/recent
 Returns the last 20 recently added videos.
 
-### GET /api/videos/movies
-Returns a list of movies only.
-
-### GET /api/videos/movies/search?q={term}
-Searches for specific terms within the movies category.
-
-### GET /api/videos/documentaries
-Returns a list of documentaries only.
-
-### GET /api/videos/documentaries/search?q={term}
-Searches for specific terms within the documentaries category.
-
-### GET /api/videos/other
-Returns a list of miscellaneous video files.
-
 ### GET /api/videos/search?q={term}
 General search for any video file.
 
@@ -62,25 +44,10 @@ Returns data for a single specific image.
 ---
 
 ##  Documents API
-### GET /api/docs
+### GET /api/documents
 Returns a list of all documents.
 
-### GET /api/docs/books
-Returns a list of e-books only.
-
-### GET /api/docs/books/search?q={term}
-Searches for specific terms within the books category.
-
-### GET /api/docs/documents
-Returns a list of standard documents.
-
-### GET /api/docs/documents/search?q={term}
-Searches for specific terms within the documents category.
-
-### GET /api/docs/others
-Returns a list of other document types.
-
-### GET /api/docs/search?q={term}
+### GET /api/documents/search?q={term}
 General search for any document.
 
 ---

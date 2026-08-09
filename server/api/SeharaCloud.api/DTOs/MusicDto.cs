@@ -1,4 +1,4 @@
-namespace HomeCloud.DTOs;
+namespace SeharaCloud.DTOs;
 
 public record MusicDto
 {

@@ -6,6 +6,10 @@ using SeharaCloud.Repositories.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 
+// Repositories/Helpers 
+using static SeharaCloud.Repositories.Helpers.SqlThumbnailHelper; 
+
+
 public class VideoRepository : IVideoRepository
 {
     private readonly NpgsqlDataSource _dataSource;
@@ -18,28 +22,19 @@ public class VideoRepository : IVideoRepository
     }
 
 
-    private string ThumbnailUrlVideo(string alias = "v") =>
-    $"""
-    CASE 
-        WHEN {alias}.thumbnail_id IS NOT NULL
-        THEN '{_baseUrl}/api/thumbnail/' || {alias}.thumbnail_id
-        ELSE NULL
-    END
-    """;
-
     public async Task<IEnumerable<VideoDto>> GetAllAsync()
     {
         await using var conn = await _dataSource.OpenConnectionAsync();
         var sql = $"""
                 SELECT
-                   v.id             AS Id,
-                   v.filename       AS Filename,
-                   v.mime_type      AS MimeType,
-                   {ThumbnailUrlVideo()} AS ThumbnailUrl,
-                   v.title          AS Title,
-                   v.duration_sec   AS DurationSec,
-                   v.resolution     AS Resolution,
-                   v.codec          AS Codec
+                   v.id                       AS Id,
+                   v.filename                 AS Filename,
+                   v.mime_type                AS MimeType,
+                   {Single(_baseUrl, "v")}    AS ThumbnailUrl,
+                   v.title                    AS Title,
+                   v.duration_sec             AS DurationSec,
+                   v.resolution               AS Resolution,
+                   v.codec                    AS Codec
                 FROM videos v
                 ORDER BY v.title
         """;
@@ -52,14 +47,14 @@ public class VideoRepository : IVideoRepository
         await using var conn = await _dataSource.OpenConnectionAsync();
         var sql = $"""
                 SELECT
-                   v.id             AS Id,
-                   v.filename       AS Filename,
-                   v.mime_type      AS MimeType,
-                   {ThumbnailUrlVideo()} AS ThumbnailUrl,
-                   v.title          AS Title,
-                   v.duration_sec   AS DurationSec,
-                   v.resolution     AS Resolution,
-                   v.codec          AS Codec
+                   v.id                       AS Id,
+                   v.filename                 AS Filename,
+                   v.mime_type                AS MimeType,
+                   {Single(_baseUrl, "v")}    AS ThumbnailUrl,
+                   v.title                    AS Title,
+                   v.duration_sec             AS DurationSec,
+                   v.resolution               AS Resolution,
+                   v.codec                    AS Codec
                 FROM videos v
                 ORDER BY v.indexed_at DESC
                 LIMIT @limit
@@ -74,14 +69,14 @@ public class VideoRepository : IVideoRepository
         await using var conn = await _dataSource.OpenConnectionAsync();
         var sql = $"""
                 SELECT
-                   v.id             AS Id,
-                   v.filename       AS Filename,
-                   v.mime_type      AS MimeType,
-                   {ThumbnailUrlVideo()} AS ThumbnailUrl,
-                   v.title          AS Title,
-                   v.duration_sec   AS DurationSec,
-                   v.resolution     AS Resolution,
-                   v.codec          AS Codec
+                   v.id                       AS Id,
+                   v.filename                 AS Filename,
+                   v.mime_type                AS MimeType,
+                   {Single(_baseUrl, "v")}    AS ThumbnailUrl,
+                   v.title                    AS Title,
+                   v.duration_sec             AS DurationSec,
+                   v.resolution               AS Resolution,
+                   v.codec                    AS Codec
                 FROM videos v
                 WHERE v.title ILIKE @Query
                 ORDER BY v.title

@@ -6,8 +6,9 @@ using SeharaCloud.DTOs;
 using SeharaCloud.Repositories.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
-using System.Runtime.CompilerServices;
 
+// Repositories/Helpers 
+using static SeharaCloud.Repositories.Helpers.SqlThumbnailHelper; 
 public class MusicRepository : IMusicRepository
 {
     private readonly NpgsqlDataSource _dataSource;
@@ -20,34 +21,7 @@ public class MusicRepository : IMusicRepository
         _baseUrl = config["AppSettings:BaseUrl"]!.TrimEnd('/');    
     }
 
-    private string ThumbnailUrlMusic(string alias = "m") =>
-    $"""
-    CASE 
-        WHEN {alias}.thumbnail_id IS NOT NULL
-        THEN '{_baseUrl}/api/thumbnail/' || {alias}.thumbnail_id
-        ELSE NULL
-    END
-    """;
-
-    private string ThumbnailUrlArtist(string alias = "a") =>
-    $"""
-    CASE 
-        WHEN {alias}.thumbnail_id3 IS NOT NULL
-        THEN '{_baseUrl}/api/thumbnail/' || {alias}.thumbnail_id3
-        WHEN {alias}.thumbnail_id2 IS NOT NULL
-        THEN '{_baseUrl}/api/thumbnail/' || {alias}.thumbnail_id2
-        ELSE '{_baseUrl}/api/thumbnail/' || {alias}.thumbnail_id1
-    END
-    """;
-
-    private string ThumbnailUrlGenre(string alias = "g") =>
-    $"""
-    CASE 
-        WHEN {alias}.thumbnail_id2 IS NOT NULL
-        THEN '{_baseUrl}/api/thumbnail/' || {alias}.thumbnail_id2
-        ELSE '{_baseUrl}/api/thumbnail/' || {alias}.thumbnail_id1
-    END
-    """;
+    
 
     public async Task<IEnumerable<MusicDto>> GetAllAsync()
     {
@@ -57,7 +31,7 @@ public class MusicRepository : IMusicRepository
                     m.id                        AS Id,
                     m.filename                  AS Filename,
                     m.mime_type                 AS MimeType,
-                    {ThumbnailUrlMusic()}       AS ThumbnailUrl,
+                    {Single(_baseUrl)}       AS ThumbnailUrl,
                     m.title                     AS Title,
                     a.name                      AS Artist,
                     g.name                      AS Genre,
@@ -78,7 +52,7 @@ public class MusicRepository : IMusicRepository
                     m.id                        AS Id,
                     m.filename                  AS Filename,
                     m.mime_type                 AS MimeType,
-                    {ThumbnailUrlMusic()}       AS ThumbnailUrl,
+                    {Single(_baseUrl)}       AS ThumbnailUrl,
                     m.title                     AS Title,
                     a.name                      AS Artist,
                     g.name                      AS Genre,
@@ -100,7 +74,7 @@ public class MusicRepository : IMusicRepository
                     a.id                        AS Id,
                     a.name                      AS Name,
                     g.name                      AS GenreName,
-                    {ThumbnailUrlArtist()}      AS ThumbnailUrl,
+                    {Triple(_baseUrl)}      AS ThumbnailUrl,
                     (SELECT COUNT(1) FROM music m WHERE m.artist_id = a.id) AS SongCount
                 FROM artists a
                 LEFT JOIN genres g ON g.id = a.genre_id
@@ -117,7 +91,7 @@ public class MusicRepository : IMusicRepository
                     m.id                        AS Id,
                     m.filename                  AS Filename,
                     m.mime_type                 AS MimeType,
-                    {ThumbnailUrlMusic()}       AS ThumbnailUrl,
+                    {Single(_baseUrl)}       AS ThumbnailUrl,
                     m.title                     AS Title,
                     a.name                      AS Artist,
                     g.name                      AS Genre,
@@ -138,7 +112,7 @@ public class MusicRepository : IMusicRepository
         var sql = $"""
             SELECT 
                 g.name                      AS Name,
-                {ThumbnailUrlGenre()}       AS ThumbnailUrl,
+                {Double(_baseUrl)}       AS ThumbnailUrl,
              (
                 SELECT COUNT(m.id) 
                 FROM music m 
@@ -160,7 +134,7 @@ public class MusicRepository : IMusicRepository
                     m.id                        AS Id,
                     m.filename                  AS Filename,
                     m.mime_type                 AS MimeType,
-                    {ThumbnailUrlMusic()}       AS ThumbnailUrl,
+                    {Single(_baseUrl)}       AS ThumbnailUrl,
                     m.title                     AS Title,
                     a.name                      AS Artist,
                     g.name                      AS Genre,
@@ -185,7 +159,7 @@ public class MusicRepository : IMusicRepository
                     m.id                        AS Id,
                     m.filename                  AS Filename,
                     m.mime_type                 AS MimeType,
-                    {ThumbnailUrlMusic()}       AS ThumbnailUrl,
+                    {Single(_baseUrl)}       AS ThumbnailUrl,
                     m.title                     AS Title,
                     a.name                      AS Artist,
                     g.name                      AS Genre,
@@ -208,7 +182,7 @@ public class MusicRepository : IMusicRepository
                     a.id                        AS Id,
                     a.name                      AS Name,
                     g.name                      AS GenreName,
-                    {ThumbnailUrlArtist()}      AS ThumbnailUrl,
+                    {Triple(_baseUrl)}      AS ThumbnailUrl,
                     (SELECT COUNT(1) FROM music m WHERE m.artist_id = a.id) AS SongCount
                 FROM artists a
                 LEFT JOIN genres g ON g.id = a.genre_id

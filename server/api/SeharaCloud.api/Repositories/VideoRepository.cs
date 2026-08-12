@@ -42,7 +42,7 @@ public class VideoRepository : IVideoRepository
         return await conn.QueryAsync<VideoDto>(sql);
     }
 
-    public async Task<IEnumerable<VideoDto>> GetRecentAsync(int limit = 20)
+    public async Task<IEnumerable<VideoDto>> GetRecentAsync(int limit)
     {
         await using var conn = await _dataSource.OpenConnectionAsync();
         var sql = $"""

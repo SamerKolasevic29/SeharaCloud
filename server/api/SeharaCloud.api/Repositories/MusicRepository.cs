@@ -44,7 +44,7 @@ public class MusicRepository : IMusicRepository
              return await conn.QueryAsync<MusicDto>(sql);
     }
 
-    public async Task<IEnumerable<MusicDto>> GetRecentAsync(int limit = 20)
+    public async Task<IEnumerable<MusicDto>> GetRecentAsync(int limit)
     {
         await using var conn = await _dataSource.OpenConnectionAsync();
         var sql = $"""

@@ -1,4 +1,4 @@
-namespace HomeCloud.Exceptions;
+namespace SeharaCloud.Exceptions;
 
 public class ValidationException : Exception
 {

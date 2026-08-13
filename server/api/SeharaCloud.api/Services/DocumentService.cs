@@ -10,7 +10,7 @@ public class DocumentService : IDocumentService
     private readonly IDocumentRepository _repo;
     private const int RecentLimit = 20;
 
-    public DocumentService(IDocumentRepository repo) { repo = _repo;}
+    public DocumentService(IDocumentRepository repo) { _repo = repo;}
 
     public Task<IEnumerable<DocumentDto>> GetAllAsync() => _repo.GetAllAsync();
 

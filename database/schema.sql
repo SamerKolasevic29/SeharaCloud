@@ -22,6 +22,7 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE TABLE thumbnails (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     path       TEXT NOT NULL UNIQUE,
+    mime_type  TEXT,
     width      INT,
     height     INT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

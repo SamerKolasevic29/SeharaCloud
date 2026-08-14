@@ -8,17 +8,20 @@ Returns the last 20 recently added songs.
 ### GET /api/music/artists
 Returns a list of all artists along with their song counts.
 
-### GET /api/music/artists/{artist}
+### GET /api/music/artists/{id}
 Returns all songs belonging to a specific artist.
 
 ### GET /api/music/genres
 Returns a list of all music genres.
 
-### GET /api/music/genres/{genre}
+### GET /api/music/genres/{id}
 Returns all songs belonging to a specific genre.
 
 ### GET /api/music/search?q={term}
 Searches for music files matching the query term.
+
+### GET /api/music/artists/search?q={term}
+Searches for artists matching the query term.
 
 ---
 

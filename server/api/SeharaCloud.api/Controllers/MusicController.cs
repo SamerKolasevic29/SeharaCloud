@@ -28,6 +28,7 @@ public class MusicController : ControllerBase
         return Ok(result);
     }
 
+    // GET /api/music/artists
     [HttpGet("artists")]
     public async Task<IActionResult> GetArtists()
     {

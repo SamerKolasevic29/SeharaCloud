@@ -12,4 +12,5 @@ public interface IMusicService
     Task<IEnumerable<MusicDto>> GetByGenreIdAsync(Guid genreId);
     Task<IEnumerable<MusicDto>> SearchAsync(string query);
     Task<IEnumerable<ArtistDto>> SearchArtistsAsync(string query);
+    Task<(string Path, string MimeType)> GetStreamInfoAsync(Guid id);
 }

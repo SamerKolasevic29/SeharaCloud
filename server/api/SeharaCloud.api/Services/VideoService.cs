@@ -26,4 +26,17 @@ public class VideoService : IVideoService
         return await _repo.SearchVideoAsync(query.Trim());
 
     }
+
+    public async Task<(string Path, string MimeType)> GetStreamInfoAsync(Guid id)
+    {
+        var info = await _repo.GetStreamInfoAsync(id);
+
+        if (info is null)
+            throw new NotFoundException($"Video with ID = {id} does not exist!");
+
+        if (!File.Exists(info.Value.Path))
+            throw new NotFoundException($"Multimedia file is missing on disk: {info.Value.Path}");
+
+        return info.Value;
+    }
 }

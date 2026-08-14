@@ -1,6 +1,5 @@
 namespace SeharaCloud.Services;
 
-
 using SeharaCloud.Exceptions;
 using SeharaCloud.Repositories.Interfaces;
 using SeharaCloud.Services.Interfaces;
@@ -14,16 +13,16 @@ public class ThumbnailService : IThumbnailService
         _repo = repo;
     }
 
-    public async Task<string?> GetThumbnailPathAsync(Guid fileId)
+    public async Task<(string Path, string MimeType)?> GetThumbnailInfoAsync(Guid thumbnailId)
     {
-        var path = await _repo.GetThumbnailPathAsync(fileId);
+        var info = await _repo.GetThumbnailInfoAsync(thumbnailId);
 
-        if (path is null)
-            throw new NotFoundException($"Thumbnail za fajl {fileId} ne postoji");
+        if (info is null)
+            throw new NotFoundException($"Thumbnail za fajl {thumbnailId} ne postoji");
 
-        if (!File.Exists(path))
-            throw new NotFoundException($"Thumbnail fajl nije pronađen na disku: {path}");
+        if (!File.Exists(info.Value.Path))
+            throw new NotFoundException($"Thumbnail fajl nije pronađen na disku: {info.Value.Path}");
 
-        return path;
+        return info;
     }
 }

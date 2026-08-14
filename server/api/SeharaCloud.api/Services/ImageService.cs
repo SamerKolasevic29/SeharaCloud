@@ -26,4 +26,17 @@ public class ImageService : IImageService
 
         return image;
     }
+
+    public async Task<(string Path, string MimeType)> GetStreamInfoAsync(Guid id)
+    {
+        var info = await _repo.GetStreamInfoAsync(id);
+
+        if (info is null)
+            throw new NotFoundException($"Photo with ID = {id} does not exist!");
+
+        if (!File.Exists(info.Value.Path))
+            throw new NotFoundException($"Image file is missing on disk: {info.Value.Path}");
+
+        return info.Value;
+    }
 }

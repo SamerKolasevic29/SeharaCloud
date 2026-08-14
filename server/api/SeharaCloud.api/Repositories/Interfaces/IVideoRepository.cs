@@ -10,4 +10,6 @@ public interface IVideoRepository
 
     Task<IEnumerable<VideoDto>> SearchVideoAsync(string query);
 
+     Task<(string Path, string MimeType)?> GetStreamInfoAsync(Guid id);
+
 }

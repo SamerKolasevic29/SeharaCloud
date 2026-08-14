@@ -29,4 +29,17 @@ public class ImagesController : ControllerBase
         var result = await _service.GetByIdAsync(id);
         return Ok(result);
     }
+
+    // GET /api/images/3fa85f64-5717-4562-b3fc-2c963f66afa6/stream
+    [HttpGet("{id:guid}/stream")]
+    public async Task<IActionResult> Stream(Guid id)
+    {
+        var info = await _service.GetStreamInfoAsync(id);
+
+        return PhysicalFile(
+            physicalPath: info.Path,
+            contentType: info.MimeType,
+            enableRangeProcessing: true
+        );
+    }
 }

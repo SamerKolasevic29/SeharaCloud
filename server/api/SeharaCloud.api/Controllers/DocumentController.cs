@@ -34,4 +34,17 @@ public class DocumentController : ControllerBase
         var result = await _service.SearchDocumentAsync(q);
         return Ok(result);
     }
+
+   // GET /api/documents/3fa85f64-5717-4562-b3fc-2c963f66afa6/stream
+    [HttpGet("{id:guid}/stream")]
+    public async Task<IActionResult> Stream(Guid id)
+    {
+        var info = await _service.GetStreamInfoAsync(id);
+
+        return PhysicalFile(
+            physicalPath: info.Path,
+            contentType: info.MimeType,
+            enableRangeProcessing: true
+        );
+    }
 }

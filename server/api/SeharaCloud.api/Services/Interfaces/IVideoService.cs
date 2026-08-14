@@ -9,4 +9,5 @@ public interface IVideoService
     Task<IEnumerable<VideoDto>> GetRecentAsync(int limit);
 
     Task<IEnumerable<VideoDto>> SearchAsync(string query);
+    Task<(string Path, string MimeType)> GetStreamInfoAsync(Guid id);
 }

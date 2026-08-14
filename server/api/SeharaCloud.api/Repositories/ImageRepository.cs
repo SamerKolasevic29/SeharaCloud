@@ -59,4 +59,20 @@ public class ImageRepository : IImageRepository
 
         return await conn.QueryFirstOrDefaultAsync<ImageDto>(sql, new { Id = id });
     }
+
+    public async Task<(string Path, string MimeType)?> GetStreamInfoAsync(Guid id)
+    {
+        await using var conn = await _dataSource.OpenConnectionAsync();
+        
+        const string sql = """
+            SELECT path, mime_type AS MimeType 
+            FROM images 
+            WHERE id = @Id
+        """;
+
+        var result = await conn.QueryFirstOrDefaultAsync<(string Path, string MimeType)>(
+            sql, new { Id = id });
+
+        return result.Path is null ? null : result;
+    }
 }

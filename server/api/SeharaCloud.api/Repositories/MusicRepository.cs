@@ -192,4 +192,20 @@ public class MusicRepository : IMusicRepository
 
         return await conn.QueryAsync<ArtistDto>(sql, new {Query = $"%{query}%"});
     }
+
+    public async Task<(string Path, string MimeType)?> GetStreamInfoAsync(Guid id)
+    {
+        await using var conn = await _dataSource.OpenConnectionAsync();
+        
+        const string sql = """
+            SELECT path, mime_type AS MimeType 
+            FROM music 
+            WHERE id = @Id
+        """;
+
+        var result = await conn.QueryFirstOrDefaultAsync<(string Path, string MimeType)>(
+            sql, new { Id = id });
+
+        return result.Path is null ? null : result;
+    }
 }

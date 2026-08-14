@@ -15,17 +15,19 @@ public class ThumbnailRepository : IThumbnailRepository
         _dataSource = dataSource;
     }
 
-    public async Task<string?> GetThumbnailPathAsync(Guid id)
+     public async Task<(string Path, string MimeType)?> GetThumbnailInfoAsync(Guid id)
     {
         await using var conn = await _dataSource.OpenConnectionAsync();
         
-        // Sada radimo direktan upit u tabelu 'thumbnails'
-        var sql = """
-            SELECT path 
+        const string sql = """
+            SELECT path, mime_type AS MimeType 
             FROM thumbnails 
             WHERE id = @Id
         """;
 
-        return await conn.QueryFirstOrDefaultAsync<string>(sql, new { Id = id });
+        var result = await conn.QueryFirstOrDefaultAsync<(string Path, string MimeType)>(
+            sql, new { Id = id });
+
+        return result.Path is null ? null : result;
     }
 }

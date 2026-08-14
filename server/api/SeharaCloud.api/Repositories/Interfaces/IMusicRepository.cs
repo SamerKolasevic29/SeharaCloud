@@ -19,4 +19,7 @@ public interface IMusicRepository
     // -- Search ----------
     Task<IEnumerable<MusicDto>> SearchMusicAsync(string query);
     Task<IEnumerable<ArtistDto>> SearchArtistAsync(string query);
+
+    // -- Stream ----------
+    Task<(string Path, string MimeType)?> GetStreamInfoAsync(Guid id);
 }

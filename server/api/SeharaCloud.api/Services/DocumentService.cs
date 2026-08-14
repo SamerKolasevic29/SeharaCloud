@@ -28,4 +28,17 @@ public class DocumentService : IDocumentService
 
         return await _repo.SearchDocumentAsync(query.Trim());
     }
+
+    public async Task<(string Path, string MimeType)> GetStreamInfoAsync(Guid id)
+    {
+        var info = await _repo.GetStreamInfoAsync(id);
+
+        if (info is null)
+            throw new NotFoundException($"Document with ID = {id} does not exist!");
+
+        if (!File.Exists(info.Value.Path))
+            throw new NotFoundException($"Doc file is missing on disk: {info.Value.Path}");
+
+        return info.Value;
+    }
 }

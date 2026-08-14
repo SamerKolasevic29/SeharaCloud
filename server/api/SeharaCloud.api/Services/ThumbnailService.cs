@@ -13,7 +13,7 @@ public class ThumbnailService : IThumbnailService
         _repo = repo;
     }
 
-    public async Task<(string Path, string MimeType)?> GetThumbnailInfoAsync(Guid thumbnailId)
+    public async Task<(string Path, string MimeType)> GetThumbnailInfoAsync(Guid thumbnailId)
     {
         var info = await _repo.GetThumbnailInfoAsync(thumbnailId);
 
@@ -23,6 +23,6 @@ public class ThumbnailService : IThumbnailService
         if (!File.Exists(info.Value.Path))
             throw new NotFoundException($"Thumbnail fajl nije pronađen na disku: {info.Value.Path}");
 
-        return info;
+        return info.Value;
     }
 }

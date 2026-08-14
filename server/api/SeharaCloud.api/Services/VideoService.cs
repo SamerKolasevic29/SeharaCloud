@@ -15,7 +15,7 @@ public class VideoService : IVideoService
     public Task<IEnumerable<VideoDto>> GetAllAsync()
         => _repo.GetAllAsync();
 
-    public Task<IEnumerable<VideoDto>> GetRecentAsync(int limit)
+    public Task<IEnumerable<VideoDto>> GetRecentAsync()
         => _repo.GetRecentAsync(RecentLimit);
 
     public async Task<IEnumerable<VideoDto>> SearchAsync(string query)

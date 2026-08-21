@@ -1,35 +1,37 @@
-# === STAGE 1: Build C++ Indexer ===
-FROM debian:bookworm-slim AS build
+# === STAGE 1: Build  ===
+FROM alpine:3.19 AS build
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
+RUN apk add --no-cache \
+    build-base \
     cmake \
-    pkg-config \
-    libpqxx-dev \
+    pkgconf \
     libpq-dev \
-    libtag1-dev \
-    libpoppler-cpp-dev \
-    libmagick++-dev \
-    libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
+    libpqxx-dev \
+    taglib-dev \
+    poppler-dev \
+    imagemagick-dev \
+    openssl-dev
 
 WORKDIR /src
+
 COPY . .
 
 RUN mkdir build && cd build && \
     cmake -DCMAKE_BUILD_TYPE=Release .. && \
-    make -j2
+    make -j$(nproc)
 
-# === STAGE 2: Runtime Container ===
-FROM debian:bookworm-slim AS final
+# === STAGE 2: Minimal runtime compiler ===
+FROM alpine:3.19 AS final
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpqxx-dev \
-    libpoppler-cpp-dev \
-    libmagick++-dev \
-    libtag1-dev \
-    ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache \
+    libstdc++ \
+    libpq \
+    libpqxx \
+    taglib \
+    poppler-cpp \
+    imagemagick \
+    openssl \
+    ffmpeg
 
 WORKDIR /app
 

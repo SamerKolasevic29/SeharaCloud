@@ -3,11 +3,14 @@ services:
     image: postgres:16-alpine
     container_name: seharacloud-db
     restart: unless-stopped
-    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-seharapassword}
+      POSTGRES_DB: ${POSTGRES_DB:-seharacloud}
     volumes:
-      - /data/seharacloud/db-data:/var/lib/postgresql/data
+      - ${DB_DATA_PATH:-./data/seharacloud/db-data}:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U clouduser -d seharacloud-db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -16,19 +19,18 @@ services:
 
   seharacloud-api:
     build:
-      context: /data/configs/seharacloud/api/
-      dockerfile: server/api/SeharaCloud.api/Dockerfile
+      context: ./server/api
+      dockerfile: server/SeharaCloud.Api/Dockerfile
     container_name: seharacloud-api
     restart: unless-stopped
     environment:
       - ASPNETCORE_URLS=http://+:5000
       - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Host=seharacloud-db;Port=5432;Database=seharacloud-db;Username=clouduser;Password=vuduuser
+      - ConnectionStrings__DefaultConnection=Host=seharacloud-db;Port=5432;Database=${POSTGRES_DB:-seharacloud};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-seharapassword}
     volumes:
-      - /data/seharacloud/media:/mnt/cloud
-      - ./appsettings.Production.json:/app/appsettings.Production.json:ro
+      - ${MEDIA_PATH:-./data/seharacloud/media}:/mnt/cloud
     ports:
-      - "127.0.0.1:5000:5000"
+      - "${API_PORT:-5000}:5000"
     depends_on:
       seharacloud-db:
         condition: service_healthy
@@ -37,16 +39,16 @@ services:
 
   seharacloud-indexer:
     build:
-      context: /data/configs/seharacloud/api/server/indexer
+      context: ./server/indexer
       dockerfile: Dockerfile
     container_name: seharacloud-indexer
     restart: unless-stopped
     environment:
-      - DB_CONNECTION_STRING=postgresql://clouduser:vuduuser@seharacloud-db:5432/seharacloud-db
+      - DB_CONNECTION_STRING=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-seharapassword}@seharacloud-db:5432/${POSTGRES_DB:-seharacloud}
       - PHYSICAL_BASE_PATH=/data/seharacloud/media
       - LOGICAL_BASE_PATH=/mnt/cloud
     volumes:
-      - /data/seharacloud/media:/data/seharacloud/media
+      - ${MEDIA_PATH:-./data/seharacloud/media}:/mnt/cloud
     depends_on:
       seharacloud-db:
         condition: service_healthy

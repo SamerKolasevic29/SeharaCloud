@@ -32,6 +32,7 @@ public class MusicRepository : IMusicRepository
                     m.filename                  AS Filename,
                     m.mime_type                 AS MimeType,
                     {Single(_baseUrl)}       AS ThumbnailUrl,
+                    m.size_bytes             AS SizeBytes,
                     m.title                     AS Title,
                     a.name                      AS Artist,
                     g.name                      AS Genre,
@@ -53,6 +54,7 @@ public class MusicRepository : IMusicRepository
                     m.filename                  AS Filename,
                     m.mime_type                 AS MimeType,
                     {Single(_baseUrl)}       AS ThumbnailUrl,
+                    m.size_bytes             AS SizeBytes,
                     m.title                     AS Title,
                     a.name                      AS Artist,
                     g.name                      AS Genre,
@@ -92,6 +94,7 @@ public class MusicRepository : IMusicRepository
                     m.filename                  AS Filename,
                     m.mime_type                 AS MimeType,
                     {Single(_baseUrl)}       AS ThumbnailUrl,
+                    m.size_bytes             AS SizeBytes,
                     m.title                     AS Title,
                     a.name                      AS Artist,
                     g.name                      AS Genre,
@@ -111,6 +114,7 @@ public class MusicRepository : IMusicRepository
         await using var conn = await _dataSource.OpenConnectionAsync();
         var sql = $"""
             SELECT 
+                g.id                        AS Id,
                 g.name                      AS Name,
                 {Double(_baseUrl)}       AS ThumbnailUrl,
              (
@@ -135,6 +139,7 @@ public class MusicRepository : IMusicRepository
                     m.filename                  AS Filename,
                     m.mime_type                 AS MimeType,
                     {Single(_baseUrl)}       AS ThumbnailUrl,
+                    m.size_bytes             AS SizeBytes,
                     m.title                     AS Title,
                     a.name                      AS Artist,
                     g.name                      AS Genre,
@@ -160,6 +165,7 @@ public class MusicRepository : IMusicRepository
                     m.filename                  AS Filename,
                     m.mime_type                 AS MimeType,
                     {Single(_baseUrl)}       AS ThumbnailUrl,
+                    m.size_bytes             AS SizeBytes,
                     m.title                     AS Title,
                     a.name                      AS Artist,
                     g.name                      AS Genre,

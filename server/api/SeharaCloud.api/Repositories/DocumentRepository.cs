@@ -27,6 +27,7 @@ public class DocumentRepository : IDocumentRepository
                     d.id                       AS Id,
                     d.filename                 AS Filename,
                     {Single(_baseUrl, "d")}    AS ThumbnailUrl,
+                    d.size_bytes               AS SizeBytes,
                     d.title                    AS Title,
                     d.page_count               AS PageCount
                 FROM documents d
@@ -45,6 +46,7 @@ public class DocumentRepository : IDocumentRepository
                     d.id                       AS Id,
                     d.filename                 AS Filename,
                     {Single(_baseUrl, "d")}    AS ThumbnailUrl,
+                    d.size_bytes               AS SizeBytes,
                     d.title                    AS Title,
                     d.page_count               AS PageCount
                 FROM documents d
@@ -63,6 +65,7 @@ public class DocumentRepository : IDocumentRepository
                     d.id                       AS Id,
                     d.filename                 AS Filename,
                     {Single(_baseUrl, "d")}    AS ThumbnailUrl,
+                    d.size_bytes               AS SizeBytes,
                     d.title                    AS Title,
                     d.page_count               AS PageCount
                 FROM documents d

@@ -13,8 +13,8 @@ Database::Database(const std::string& conn_str) : conn(conn_str) {
 }
 
 Database::~Database() {
-    if(conn.is_open())
-        conn.close();
+   // if(conn.is_open())
+    //    conn.close();
 }
 
 // helper for finding duplicates
@@ -124,8 +124,8 @@ bool Database::insertImage(const ImageMeta& meta, const std::optional<ThumbnailM
         // If we have a generated webp,we must firstly insert thumbnail then an image
         if (thumbnail.has_value()) {
             pqxx::result R = W.exec_params(
-                "INSERT INTO thumbnails (path, width, height) VALUES ($1, $2, $3) RETURNING id",
-                thumbnail->path, thumbnail->width, thumbnail->height
+                "INSERT INTO thumbnails (path, width, height, mime_type) VALUES ($1, $2, $3, $4) RETURNING id",
+                thumbnail->path, thumbnail->width, thumbnail->height, "image/webp"
             );
             final_thumb_id = R[0][0].c_str(); // generated UUID of thumbnail
         }

@@ -1,0 +1,8 @@
+{
+  "AppSettings": {
+    "BaseUrl": "https://sehara.cloud.com"
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=seharacloud-db;Port=5432;Database=seharacloud-db;Username=clouduser;Password=change_me"
+  }
+}

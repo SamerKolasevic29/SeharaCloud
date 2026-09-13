@@ -63,5 +63,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation("com.github.mhiew:android-pdf-viewer:3.2.0-beta.3")
+    implementation("androidx.media3:media3-session:1.3.1")
 
 }

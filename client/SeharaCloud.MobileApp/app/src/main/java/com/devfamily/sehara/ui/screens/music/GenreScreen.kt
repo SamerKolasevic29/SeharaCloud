@@ -86,7 +86,7 @@ fun GenreScreen(
 
     LaunchedEffect(Unit) {
         if (showInitialSplash) {
-            delay(1000)
+            delay(300)
             showSplash = false
         } else {
             showSplash = false

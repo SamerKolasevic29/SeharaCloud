@@ -92,7 +92,7 @@ fun ArtistScreen(
 
     LaunchedEffect(Unit) {
         if (showInitialSplash) {
-            delay(1000)
+            delay(800)
             showSplash = false
         } else {
             showSplash = false
@@ -121,6 +121,7 @@ fun ArtistScreen(
             Box(
                 modifier = modifier
                     .fillMaxSize()
+                    .background(Color.Black)
                     .statusBarsPadding()
                     .navigationBarsPadding()
             ) {

@@ -4,8 +4,11 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.MediaController
+import com.devfamily.sehara.data.PlayerConnection
 import com.devfamily.sehara.data.RetrofitClient
 import com.devfamily.sehara.data.SongItem
 import kotlinx.coroutines.delay
@@ -22,6 +25,7 @@ data class SongUiModel(
     val thumbnailUrl: String? = null
 )
 
+@UnstableApi
 class MusicPlayerViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _currentSong = MutableStateFlow(SongUiModel())
@@ -45,27 +49,52 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
     val hasPrevious: Boolean get() = currentQueueIndex > 0
     val hasNext: Boolean get() = currentQueueIndex < queue.size - 1
 
-    private val exoPlayer: ExoPlayer = ExoPlayer.Builder(application).build()
+    private var controller: MediaController? = null
+    private var pendingLoad: (() -> Unit)? = null
 
     init {
-        exoPlayer.addListener(object : Player.Listener {
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                _isPlaying.value = isPlaying
-            }
-
-            override fun onPlaybackStateChanged(state: Int) {
-                if (state == Player.STATE_ENDED) {
-                    skipNext()
+        PlayerConnection.connect(application) { mediaController ->
+            controller = mediaController
+            mediaController.addListener(object : Player.Listener {
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    _isPlaying.value = isPlaying
                 }
-            }
-        })
+
+                override fun onPlaybackStateChanged(state: Int) {
+                    if (state == Player.STATE_ENDED) {
+                        skipNext()
+                    }
+                }
+
+                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                    val index = mediaController.currentMediaItemIndex
+                    if (index in queue.indices) {
+                        currentQueueIndex = index
+                        val item = queue[index]
+                        _currentSong.value = SongUiModel(
+                            id = item.id,
+                            title = item.title ?: item.filename,
+                            artist = item.artist ?: "Unknown Artist",
+                            durationMs = (item.durationSec ?: 0) * 1000L,
+                            thumbnailUrl = item.thumbnailUrl
+                        )
+                        _currentPosition.value = 0L
+                        _hasPrevious.value = index > 0
+                        _hasNext.value = index < queue.size - 1
+                    }
+                }
+            })
+            pendingLoad?.invoke()
+            pendingLoad = null
+        }
 
         viewModelScope.launch {
             while (true) {
                 delay(1000L)
-                if (exoPlayer.isPlaying || exoPlayer.duration > 0L) {
-                    _currentPosition.value = exoPlayer.currentPosition
-                    val exoDuration = exoPlayer.duration
+                val player = controller
+                if (player != null && (player.isPlaying || player.duration > 0L)) {
+                    _currentPosition.value = player.currentPosition
+                    val exoDuration = player.duration
                     if (exoDuration > 0L && _currentSong.value.durationMs <= 0L) {
                         _currentSong.value = _currentSong.value.copy(durationMs = exoDuration)
                     }
@@ -81,7 +110,18 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         durationMs: Long,
         thumbnailUrl: String? = null
     ) {
-        if (_currentSong.value.id == songId && exoPlayer.playbackState != Player.STATE_IDLE) return
+        val player = controller
+        if (player == null) {
+            pendingLoad = { loadSong(songId, title, artist, durationMs, thumbnailUrl) }
+            return
+        }
+
+        if (_currentSong.value.id == songId && player.playbackState != Player.STATE_IDLE) return
+
+        queue = emptyList()
+        currentQueueIndex = -1
+        _hasPrevious.value = false
+        _hasNext.value = false
 
         _currentSong.value = SongUiModel(
             id = songId,
@@ -95,70 +135,76 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         val baseUrl = RetrofitClient.BASE_URL.removeSuffix("/")
         val streamUrl = "$baseUrl/api/music/$songId/stream"
 
-        val mediaItem = MediaItem.fromUri(streamUrl)
-        exoPlayer.setMediaItem(mediaItem)
-        exoPlayer.prepare()
-        exoPlayer.play()
+        val metadata = MediaMetadata.Builder()
+            .setTitle(title)
+            .setArtist(artist)
+            .setArtworkUri(thumbnailUrl?.let { android.net.Uri.parse(it) })
+            .build()
+
+        val mediaItem = MediaItem.Builder()
+            .setUri(streamUrl)
+            .setMediaMetadata(metadata)
+            .build()
+
+        player.setMediaItem(mediaItem)
+        player.prepare()
+        player.play()
         _isPlaying.value = true
     }
 
     fun loadSongFromQueue(item: SongItem, queueList: List<SongItem>) {
+        val player = controller
+        if (player == null) {
+            pendingLoad = { loadSongFromQueue(item, queueList) }
+            return
+        }
+
         queue = queueList
         currentQueueIndex = queueList.indexOfFirst { it.id == item.id }
-        _hasPrevious.value = currentQueueIndex > 0
-        _hasNext.value = currentQueueIndex < queue.size - 1
 
-        loadSong(
-            songId = item.id,
+        val baseUrl = RetrofitClient.BASE_URL.removeSuffix("/")
+
+        val mediaItems = queueList.map { song ->
+            val metadata = MediaMetadata.Builder()
+                .setTitle(song.title ?: song.filename)
+                .setArtist(song.artist ?: "Unknown Artist")
+                .setArtworkUri(song.thumbnailUrl?.let { android.net.Uri.parse(it) })
+                .build()
+
+            MediaItem.Builder()
+                .setUri("$baseUrl/api/music/${song.id}/stream")
+                .setMediaMetadata(metadata)
+                .build()
+        }
+
+        player.setMediaItems(mediaItems, currentQueueIndex, 0L)
+        player.prepare()
+        player.play()
+
+        _currentSong.value = SongUiModel(
+            id = item.id,
             title = item.title ?: item.filename,
             artist = item.artist ?: "Unknown Artist",
             durationMs = (item.durationSec ?: 0) * 1000L,
             thumbnailUrl = item.thumbnailUrl
         )
+        _currentPosition.value = 0L
+        _isPlaying.value = true
+        _hasPrevious.value = currentQueueIndex > 0
+        _hasNext.value = currentQueueIndex < queue.size - 1
     }
 
     fun skipNext() {
-        if (queue.isEmpty()) return
-
-        if (hasNext) {
-            currentQueueIndex++
-        } else {
-            currentQueueIndex = 0
-        }
-
-        val item = queue[currentQueueIndex]
-        _hasPrevious.value = currentQueueIndex > 0
-        _hasNext.value = currentQueueIndex < queue.size - 1
-
-        loadSong(
-            songId = item.id,
-            title = item.title ?: item.filename,
-            artist = item.artist ?: "Unknown Artist",
-            durationMs = (item.durationSec ?: 0) * 1000L,
-            thumbnailUrl = item.thumbnailUrl
-        )
+        controller?.seekToNext()
     }
 
     fun skipPrevious() {
-        if (hasPrevious) {
-            currentQueueIndex--
-            val item = queue[currentQueueIndex]
-            _hasPrevious.value = currentQueueIndex > 0
-            _hasNext.value = currentQueueIndex < queue.size - 1
-
-            loadSong(
-                songId = item.id,
-                title = item.title ?: item.filename,
-                artist = item.artist ?: "Unknown Artist",
-                durationMs = (item.durationSec ?: 0) * 1000L,
-                thumbnailUrl = item.thumbnailUrl
-            )
-        }
+        controller?.seekToPrevious()
     }
 
     fun closePlayer() {
-        exoPlayer.stop()
-        exoPlayer.clearMediaItems()
+        controller?.stop()
+        controller?.clearMediaItems()
         _currentSong.value = SongUiModel()
         _currentPosition.value = 0L
         _isPlaying.value = false
@@ -167,15 +213,16 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun togglePlayPause() {
-        if (exoPlayer.isPlaying) {
-            exoPlayer.pause()
+        val player = controller ?: return
+        if (player.isPlaying) {
+            player.pause()
         } else {
-            exoPlayer.play()
+            player.play()
         }
     }
 
     fun seekTo(position: Long) {
-        exoPlayer.seekTo(position)
+        controller?.seekTo(position)
         _currentPosition.value = position
     }
 
@@ -188,6 +235,5 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
 
     override fun onCleared() {
         super.onCleared()
-        exoPlayer.release()
     }
 }

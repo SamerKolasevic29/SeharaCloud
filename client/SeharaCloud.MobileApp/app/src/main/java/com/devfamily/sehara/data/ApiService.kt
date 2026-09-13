@@ -3,6 +3,7 @@ package com.devfamily.sehara.data
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Streaming
 
 interface ApiService {
 
@@ -80,6 +81,9 @@ interface ApiService {
 
     @GET("api/stream/{id}")
     suspend fun streamFile(@Path("id") id: String): retrofit2.Response<okhttp3.ResponseBody>
+
+    @GET("api/music/{id}/stream")
+    suspend fun streamMusic(@Path("id") id: String): retrofit2.Response<okhttp3.ResponseBody>
 
     @GET("api/thumbnails/{id}")
     suspend fun getThumbnail(@Path("id") id: String): retrofit2.Response<okhttp3.ResponseBody>

@@ -37,7 +37,7 @@ fun SearchBar(
                 shape = RoundedCornerShape(100.dp)
             )
             .background(
-                color = Color.White,
+                color = (Color(0xFF161616)),
                 shape = RoundedCornerShape(100.dp)
             ),
         decorationBox = { innerTextField ->

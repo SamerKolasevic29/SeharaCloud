@@ -50,7 +50,10 @@ fun HomeScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF161616))
+                    .background(
+                        color = Color(0xFF161616),
+                        shape = RoundedCornerShape(bottomStart = 25.dp, bottomEnd = 25.dp)
+                    )
                     .padding(horizontal = 24.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {

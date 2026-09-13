@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
-import com.devfamily.sehara.data.SongItem
 import com.devfamily.sehara.data.RetrofitClient
+import com.devfamily.sehara.data.SongItem
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +19,7 @@ data class SongUiModel(
     val title: String = "Unknown Title",
     val artist: String = "Unknown Artist",
     val durationMs: Long = 0L,
-    val thumbnailUrl: String?=null
+    val thumbnailUrl: String? = null
 )
 
 class MusicPlayerViewModel(application: Application) : AndroidViewModel(application) {
@@ -59,6 +59,7 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
                 }
             }
         })
+
         viewModelScope.launch {
             while (true) {
                 delay(1000L)
@@ -73,7 +74,13 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    fun loadSong(songId: String, title: String, artist: String, durationMs: Long, thumbnailUrl: String? = null) {
+    fun loadSong(
+        songId: String,
+        title: String,
+        artist: String,
+        durationMs: Long,
+        thumbnailUrl: String? = null
+    ) {
         if (_currentSong.value.id == songId && exoPlayer.playbackState != Player.STATE_IDLE) return
 
         _currentSong.value = SongUiModel(
@@ -81,11 +88,13 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
             title = title,
             artist = artist,
             durationMs = durationMs,
-            thumbnailUrl=thumbnailUrl
+            thumbnailUrl = thumbnailUrl
         )
         _currentPosition.value = 0L
 
-        val streamUrl = "${RetrofitClient.BASE_URL}api/stream/$songId"
+        val baseUrl = RetrofitClient.BASE_URL.removeSuffix("/")
+        val streamUrl = "$baseUrl/api/music/$songId/stream"
+
         val mediaItem = MediaItem.fromUri(streamUrl)
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
@@ -98,12 +107,13 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         currentQueueIndex = queueList.indexOfFirst { it.id == item.id }
         _hasPrevious.value = currentQueueIndex > 0
         _hasNext.value = currentQueueIndex < queue.size - 1
+
         loadSong(
-            item.id,
-            item.title ?: item.filename,
-            item.artist ?: "Unknown Artist",
-            (item.durationSec ?: 0) * 1000L,
-            item.thumbnailUrl
+            songId = item.id,
+            title = item.title ?: item.filename,
+            artist = item.artist ?: "Unknown Artist",
+            durationMs = (item.durationSec ?: 0) * 1000L,
+            thumbnailUrl = item.thumbnailUrl
         )
     }
 
@@ -121,11 +131,11 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         _hasNext.value = currentQueueIndex < queue.size - 1
 
         loadSong(
-            item.id,
-            item.title ?: item.filename,
-            item.artist ?: "Unknown Artist",
-            (item.durationSec ?: 0) * 1000L,
-            item.thumbnailUrl
+            songId = item.id,
+            title = item.title ?: item.filename,
+            artist = item.artist ?: "Unknown Artist",
+            durationMs = (item.durationSec ?: 0) * 1000L,
+            thumbnailUrl = item.thumbnailUrl
         )
     }
 
@@ -135,12 +145,13 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
             val item = queue[currentQueueIndex]
             _hasPrevious.value = currentQueueIndex > 0
             _hasNext.value = currentQueueIndex < queue.size - 1
+
             loadSong(
-                item.id,
-                item.title ?: item.filename,
-                item.artist ?: "Unknown Artist",
-                (item.durationSec ?: 0) * 1000L,
-                item.thumbnailUrl
+                songId = item.id,
+                title = item.title ?: item.filename,
+                artist = item.artist ?: "Unknown Artist",
+                durationMs = (item.durationSec ?: 0) * 1000L,
+                thumbnailUrl = item.thumbnailUrl
             )
         }
     }

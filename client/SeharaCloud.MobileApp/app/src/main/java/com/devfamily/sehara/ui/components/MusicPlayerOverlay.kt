@@ -8,9 +8,9 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -18,13 +18,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -53,13 +54,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.devfamily.sehara.R
 import com.devfamily.sehara.ui.screens.music.MusicPlayerViewModel
 import kotlin.math.roundToInt
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,6 +74,8 @@ fun MusicPlayerOverlay(
     val hasDuration = song.durationMs > 0L
     val hasPrevious by viewModel.hasPreviousFlow.collectAsState()
     val hasNext by viewModel.hasNextFlow.collectAsState()
+
+    val accentColor = Color(0xFFFF3054)
 
     if (song.id.isEmpty()) return
 
@@ -105,15 +106,23 @@ fun MusicPlayerOverlay(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White)
+                    .background(Color.Black)
                     .pointerInput(Unit) { detectTapGestures { } }
             ) {
+                Image(
+                    painter = painterResource(id = R.drawable.player_bg),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 32.dp)
                         .statusBarsPadding()
-                        .navigationBarsPadding()
+                        .navigationBarsPadding(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Spacer(modifier = Modifier.height(32.dp))
 
@@ -128,40 +137,27 @@ fun MusicPlayerOverlay(
                             modifier = Modifier
                                 .size(32.dp)
                                 .clickable { onExpandChange(false) },
-                            colorFilter = ColorFilter.tint(Color(0xFF8E8D8D))
+                            colorFilter = ColorFilter.tint(Color.White)
                         )
                         Spacer(modifier = Modifier.width(32.dp))
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(48.dp))
 
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(Color(0xFFF5F5F5))
+                            .size(320.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color(0xFF151515))
                     ) {
-                        val unknownThumbUrl = "http://192.168.100.79:5000/api/thumbnail/b875c19d-70c8-44cf-998a-bf9d06fe9533"
-                        val isUnknownThumb = song.thumbnailUrl == null || song.thumbnailUrl == unknownThumbUrl
-
-                        if (isUnknownThumb) {
-                            Image(
-                                painter = painterResource(id = R.drawable.ic_unknown_song_thumb),
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            AsyncImage(
-                                model = song.thumbnailUrl,
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop,
-                                error = painterResource(id = R.drawable.ic_unknown_song_thumb),
-                                placeholder = painterResource(id = R.drawable.music_splash_bg)
-                            )
-                        }
+                        AsyncImage(
+                            model = song.thumbnailUrl,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                            error = painterResource(id = R.drawable.ic_unknown_song_thumb),
+                            placeholder = painterResource(id = R.drawable.music_splash_bg)
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))
@@ -175,20 +171,21 @@ fun MusicPlayerOverlay(
                             contentAlignment = Alignment.Center,
                             style = MaterialTheme.typography.headlineMedium.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = Color.Black,
+                                color = Color.White,
                                 textAlign = TextAlign.Center
                             )
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = song.artist,
                             style = MaterialTheme.typography.bodyLarge.copy(
-                                color = Color(0xFF999999),
+                                color = Color(0xFFB3B3B3),
                                 textAlign = TextAlign.Center
                             )
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(48.dp))
+                    Spacer(modifier = Modifier.height(32.dp))
 
                     if (hasDuration) {
                         Slider(
@@ -196,15 +193,15 @@ fun MusicPlayerOverlay(
                             onValueChange = { viewModel.seekTo(it.toLong()) },
                             valueRange = 0f..song.durationMs.toFloat(),
                             colors = SliderDefaults.colors(
-                                activeTrackColor = Color(0xFFC70025),
-                                inactiveTrackColor = Color(0xFFEEEEEE)
+                                activeTrackColor = accentColor,
+                                inactiveTrackColor = Color(0x4DFFFFFF)
                             ),
                             thumb = {
                                 Box(
                                     modifier = Modifier
                                         .size(14.dp)
                                         .clip(CircleShape)
-                                        .background(Color(0xFFC70025))
+                                        .background(accentColor)
                                 )
                             },
                             track = { sliderState ->
@@ -212,8 +209,8 @@ fun MusicPlayerOverlay(
                                     sliderState = sliderState,
                                     modifier = Modifier.height(4.dp),
                                     colors = SliderDefaults.colors(
-                                        activeTrackColor = Color(0xFFC70025),
-                                        inactiveTrackColor = Color(0xFFEEEEEE)
+                                        activeTrackColor = accentColor,
+                                        inactiveTrackColor = Color(0x4DFFFFFF)
                                     ),
                                     thumbTrackGapSize = 0.dp,
                                     trackInsideCornerSize = 0.dp
@@ -226,28 +223,26 @@ fun MusicPlayerOverlay(
                                 .fillMaxWidth()
                                 .height(4.dp)
                                 .clip(RoundedCornerShape(2.dp))
-                                .background(Color(0xFFEEEEEE))
+                                .background(Color(0x4DFFFFFF))
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.Start
                     ) {
+                        val currentTimeFormatted = viewModel.formatTime(currentPosition)
+                        val totalTimeFormatted = if (hasDuration) viewModel.formatTime(song.durationMs) else "--:--"
+
                         Text(
-                            text = viewModel.formatTime(currentPosition),
+                            text = "$currentTimeFormatted / $totalTimeFormatted",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color(0xFF999999)
-                        )
-                        Text(
-                            text = if (hasDuration) viewModel.formatTime(song.durationMs) else "--:--",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = Color(0xFF999999)
+                            color = Color(0xFFB3B3B3)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(48.dp))
+                    Spacer(modifier = Modifier.height(32.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -269,34 +264,27 @@ fun MusicPlayerOverlay(
                                 ) { viewModel.skipPrevious() }
                                 .padding(8.dp),
                             colorFilter = ColorFilter.tint(
-                                if (hasPrevious) Color(0xFFC70025) else Color(0xFFCCCCCC)
+                                if (hasPrevious) Color.White else Color(0x66FFFFFF)
                             )
                         )
 
-                        Spacer(modifier = Modifier.width(24.dp))
+                        Spacer(modifier = Modifier.width(32.dp))
 
                         Box(
                             modifier = Modifier
-                                .size(84.dp)
-                                .clip(CircleShape)
-                                .background(Color.White)
-                                .border(
-                                    width = 2.dp,
-                                    color = Color(0xFFC70025),
-                                    shape = CircleShape
-                                )
+                                .size(56.dp)
                                 .clickable { viewModel.togglePlayPause() },
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
                                 painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
                                 contentDescription = null,
-                                modifier = Modifier.size(44.dp),
-                                colorFilter = ColorFilter.tint(Color(0xFFC70025))
+                                modifier = Modifier.size(if (isPlaying) 40.dp else 56.dp),
+                                colorFilter = ColorFilter.tint(Color.White)
                             )
                         }
 
-                        Spacer(modifier = Modifier.width(24.dp))
+                        Spacer(modifier = Modifier.width(32.dp))
 
                         val forwardInteractionExpanded = remember { MutableInteractionSource() }
                         Image(
@@ -313,7 +301,7 @@ fun MusicPlayerOverlay(
                                 ) { viewModel.skipNext() }
                                 .padding(8.dp),
                             colorFilter = ColorFilter.tint(
-                                if (hasNext) Color(0xFFC70025) else Color(0xFFCCCCCC)
+                                if (hasNext) Color.White else Color(0x66FFFFFF)
                             )
                         )
                     }
@@ -328,6 +316,8 @@ fun MusicPlayerOverlay(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
                     .offset { IntOffset(dragOffsetX.roundToInt(), 0) }
                     .pointerInput(Unit) {
                         detectHorizontalDragGestures(
@@ -349,168 +339,122 @@ fun MusicPlayerOverlay(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .offset(y = (-6).dp)
-                        .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
-                        .background(Color(0xFFC70025))
-                        .height(20.dp)
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
+                        .height(100.dp)
                         .background(
-                            color = Color.White,
-                            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                            color = Color(0xFF420E0E),
+                            shape = RoundedCornerShape(30.dp)
                         )
-                        .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                        .clip(RoundedCornerShape(30.dp))
                         .clickable { onExpandChange(true) }
-                        .padding(horizontal = 16.dp, vertical = 20.dp)
+                        .padding(start = 16.dp, end = 8.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column(
+                            Box(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .padding(end = 24.dp)
+                                    .size(width = 52.dp, height = 56.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFF151515))
+                            ) {
+                                AsyncImage(
+                                    model = song.thumbnailUrl,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop,
+                                    error = painterResource(id = R.drawable.ic_unknown_song_thumb),
+                                    placeholder = painterResource(id = R.drawable.music_splash_bg)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Column(
+                                modifier = Modifier.weight(1f)
                             ) {
                                 MarqueeText(
                                     text = song.title,
                                     style = MaterialTheme.typography.titleSmall.copy(
+                                        fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.Black
+                                        color = Color.White
                                     )
                                 )
+                                Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = song.artist,
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        color = Color(0xFF999999)
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        color = Color(0xFFB3B3B3)
                                     ),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                val rewindInteractionCollapsed = remember { MutableInteractionSource() }
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_fast_rewind),
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .size(28.dp)
-                                        .clip(CircleShape)
-                                        .indication(rewindInteractionCollapsed, ripple(bounded = true))
-                                        .clickable(
-                                            interactionSource = rewindInteractionCollapsed,
-                                            indication = null,
-                                            enabled = hasPrevious
-                                        ) { viewModel.skipPrevious() },
-                                    colorFilter = ColorFilter.tint(
-                                        if (hasPrevious) Color(0xFFC70025) else Color(0xFFCCCCCC)
-                                    )
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(Color.White)
-                                        .border(
-                                            width = 2.dp,
-                                            color = Color(0xFFC70025),
-                                            shape = CircleShape
-                                        )
-                                        .clickable { viewModel.togglePlayPause() },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Image(
-                                        painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(20.dp),
-                                        colorFilter = ColorFilter.tint(Color(0xFFC70025))
-                                    )
-                                }
-                                val forwardInteractionCollapsed = remember { MutableInteractionSource() }
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_fast_forward),
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .size(28.dp)
-                                        .clip(CircleShape)
-                                        .indication(forwardInteractionCollapsed, ripple(bounded = true))
-                                        .clickable(
-                                            interactionSource = forwardInteractionCollapsed,
-                                            indication = null,
-                                            enabled = hasNext
-                                        ) { viewModel.skipNext() },
-                                    colorFilter = ColorFilter.tint(
-                                        if (hasNext) Color(0xFFC70025) else Color(0xFFCCCCCC)
-                                    )
-                                )
-                            }
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.width(20.dp))
 
-                        if (hasDuration) {
-                            Slider(
-                                value = currentPosition.toFloat(),
-                                onValueChange = { viewModel.seekTo(it.toLong()) },
-                                valueRange = 0f..song.durationMs.toFloat(),
-                                colors = SliderDefaults.colors(
-                                    activeTrackColor = Color(0xFFC70025),
-                                    inactiveTrackColor = Color(0xFFEEEEEE)
-                                ),
-                                thumb = {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(14.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFFC70025))
-                                    )
-                                },
-                                track = { sliderState ->
-                                    SliderDefaults.Track(
-                                        sliderState = sliderState,
-                                        modifier = Modifier.height(4.dp),
-                                        colors = SliderDefaults.colors(
-                                            activeTrackColor = Color(0xFFC70025),
-                                            inactiveTrackColor = Color(0xFFEEEEEE)
-                                        ),
-                                        thumbTrackGapSize = 0.dp,
-                                        trackInsideCornerSize = 0.dp
-                                    )
-                                }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            val rewindInteractionCollapsed = remember { MutableInteractionSource() }
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_fast_rewind),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .indication(rewindInteractionCollapsed, ripple(bounded = false))
+                                    .clickable(
+                                        interactionSource = rewindInteractionCollapsed,
+                                        indication = null,
+                                        enabled = hasPrevious
+                                    ) { viewModel.skipPrevious() },
+                                colorFilter = ColorFilter.tint(
+                                    if (hasPrevious) Color.White else Color(0x66FFFFFF)
+                                )
                             )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = viewModel.formatTime(currentPosition),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xFF999999)
-                                )
-                                Text(
-                                    text = viewModel.formatTime(song.durationMs),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xFF999999)
-                                )
-                            }
-                        } else {
+
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(4.dp)
-                                    .clip(RoundedCornerShape(2.dp))
-                                    .background(Color(0xFFEEEEEE))
+                                    .size(32.dp)
+                                    .clickable { viewModel.togglePlayPause() },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(if (isPlaying) 22.dp else 30.dp),
+                                    colorFilter = ColorFilter.tint(Color.White)
+                                )
+                            }
+
+                            val forwardInteractionCollapsed = remember { MutableInteractionSource() }
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_fast_forward),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .indication(forwardInteractionCollapsed, ripple(bounded = false))
+                                    .clickable(
+                                        interactionSource = forwardInteractionCollapsed,
+                                        indication = null,
+                                        enabled = hasNext
+                                    ) { viewModel.skipNext() },
+                                colorFilter = ColorFilter.tint(
+                                    if (hasNext) Color.White else Color(0x66FFFFFF)
+                                )
                             )
                         }
+
+                        Spacer(modifier = Modifier.width(8.dp))
                     }
                 }
             }

@@ -10,7 +10,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateCentroid
@@ -104,6 +107,8 @@ fun PhotoViewerScreen(
     modifier: Modifier = Modifier,
     viewModel: PhotoViewModel,
     initialIndex: Int,
+    isImmersive: Boolean,
+    onImmersiveChange: (Boolean) -> Unit,
     onBackClick: () -> Unit = {}
 ) {
     val photos by viewModel.photoList.collectAsState()
@@ -115,84 +120,65 @@ fun PhotoViewerScreen(
 
     var isDetailsExpanded by remember { mutableStateOf(false) }
     var isZoomed by remember { mutableStateOf(false) }
-    var isImmersive by remember { mutableStateOf(false) }
+    var dismissY by remember { mutableFloatStateOf(0f) }
+    var screenHeightPx by remember { mutableFloatStateOf(1f) }
     val dragOffset = remember { mutableFloatStateOf(0f) }
 
     val currentPhoto = remember(pagerState.currentPage, photos) {
         photos.getOrNull(pagerState.currentPage)
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .onSizeChanged { screenHeightPx = it.height.toFloat().coerceAtLeast(1f) }
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .graphicsLayer {
+                    val p = (dismissY / (screenHeightPx * 0.5f)).coerceIn(0f, 1f)
+                    translationY = dismissY
+                    alpha = 1f - p
+                    scaleX = 1f - 0.2f * p
+                    scaleY = 1f - 0.2f * p
+                }
                 .background(if (isImmersive) Color.Black else Color(0xFF201F1F))
-                .navigationBarsPadding()
-                .then(if (isImmersive) Modifier.statusBarsPadding() else Modifier)
         ) {
-            AnimatedVisibility(
-                visible = !isImmersive,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = Color(0xFF161616),
-                        shape = RoundedCornerShape(bottomStart = 25.dp, bottomEnd = 25.dp)
-                    )
-                    .statusBarsPadding()
-                    .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_arrow_back),
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(Color.White),
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clickable { onBackClick() }
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_photo),
-                        contentDescription = null,
-                        modifier = Modifier.size(40.dp),
-                        colorFilter = ColorFilter.tint(Color(0xFFFF3054))
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Photos",
-                        style = MaterialTheme.typography.displayMedium.copy(letterSpacing = 0.sp),
-                        color = Color.White
-                    )
-                }
-                    Spacer(modifier = Modifier.size(28.dp))
-                }
-            }
-
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
                     .draggable(
-                        enabled = !isZoomed && !isImmersive,
+                        enabled = !isZoomed,
                         orientation = Orientation.Vertical,
                         state = rememberDraggableState { delta ->
                             dragOffset.floatValue += delta
+                            dismissY = if (!isDetailsExpanded) dragOffset.floatValue.coerceAtLeast(0f) else 0f
                         },
-                        onDragStopped = {
-                            if (dragOffset.floatValue < -60f) {
-                                isDetailsExpanded = true
-                            } else if (dragOffset.floatValue > 60f) {
-                                isDetailsExpanded = false
-                            }
+                        onDragStopped = { velocity ->
+                            val total = dragOffset.floatValue
                             dragOffset.floatValue = 0f
+                            var dismiss = false
+                            if (total < -60f) {
+                                if (!isImmersive) isDetailsExpanded = true
+                            } else if (total > 60f) {
+                                if (isDetailsExpanded) {
+                                    isDetailsExpanded = false
+                                } else if (total > 150f || velocity > 1800f) {
+                                    dismiss = true
+                                }
+                            }
+                            if (dismiss) {
+                                animate(dismissY, screenHeightPx * 0.5f, animationSpec = tween(250)) { v, _ ->
+                                    dismissY = v
+                                }
+                                onBackClick()
+                            } else if (dismissY != 0f) {
+                                animate(dismissY, 0f, animationSpec = tween(200)) { v, _ ->
+                                    dismissY = v
+                                }
+                            }
                         }
                     )
             ) {
@@ -235,8 +221,9 @@ fun PhotoViewerScreen(
                                 .pointerInput(Unit) {
                                     detectTapGestures(
                                         onTap = {
-                                            isImmersive = !isImmersive
-                                            if (isImmersive) isDetailsExpanded = false
+                                            val next = !isImmersive
+                                            onImmersiveChange(next)
+                                            if (next) isDetailsExpanded = false
                                         },
                                         onDoubleTap = {
                                             if (scale > 1f) {

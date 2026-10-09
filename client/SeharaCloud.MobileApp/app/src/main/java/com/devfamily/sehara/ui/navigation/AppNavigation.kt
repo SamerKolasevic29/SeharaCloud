@@ -21,8 +21,7 @@ import com.devfamily.sehara.ui.screens.docs.DocumentsScreen
 import com.devfamily.sehara.ui.screens.docs.DocumentViewerScreen
 import com.devfamily.sehara.ui.screens.docs.DocsCategoryScreen
 import com.devfamily.sehara.ui.screens.docs.DocsCategory
-import com.devfamily.sehara.ui.screens.photo.PhotoScreen
-import com.devfamily.sehara.ui.screens.photo.PhotoViewerScreen
+import com.devfamily.sehara.ui.screens.photo.PhotoHostScreen
 import com.devfamily.sehara.ui.screens.photo.PhotoViewModel
 
 @Composable
@@ -133,27 +132,9 @@ fun AppNavigation() {
         }
 
         composable(Routes.Photo.route) {
-            PhotoScreen(
+            PhotoHostScreen(
                 onBackClick = { navController.popBackStack() },
-                onPhotoClick = { index ->
-                    navController.navigate(Routes.PhotoViewer.createRoute(index))
-                },
                 viewModel = photoViewModel
-            )
-        }
-
-        composable(
-            route = Routes.PhotoViewer.route,
-            arguments = listOf(
-                navArgument("index") { type = NavType.IntType }
-            )
-        ) { backStackEntry ->
-            val index = backStackEntry.arguments?.getInt("index") ?: 0
-
-            PhotoViewerScreen(
-                viewModel = photoViewModel,
-                initialIndex = index,
-                onBackClick = { navController.popBackStack() }
             )
         }
 

@@ -25,7 +25,4 @@ sealed class Routes(val route: String) {
             "docs_category/$category"
     }
 
-    object PhotoViewer : Routes("photo_viewer/{index}") {
-        fun createRoute(index: Int) = "photo_viewer/$index"
-    }
 }

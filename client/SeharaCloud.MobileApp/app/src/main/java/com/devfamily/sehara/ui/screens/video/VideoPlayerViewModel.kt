@@ -3,6 +3,8 @@ package com.devfamily.sehara.ui.screens.video
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -55,7 +57,15 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
     val hasPrevious: Boolean get() = currentQueueIndex > 0
     val hasNext: Boolean get() = currentQueueIndex >= 0 && currentQueueIndex < queue.size - 1
 
-    val exoPlayer: ExoPlayer = ExoPlayer.Builder(application).build()
+    val exoPlayer: ExoPlayer = ExoPlayer.Builder(application)
+        .setAudioAttributes(
+            AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                .build(),
+            true
+        )
+        .build()
 
     init {
         exoPlayer.addListener(object : Player.Listener {

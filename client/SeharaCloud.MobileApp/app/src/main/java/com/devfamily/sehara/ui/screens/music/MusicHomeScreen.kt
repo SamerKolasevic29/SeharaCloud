@@ -83,7 +83,7 @@ fun MusicHomeScreen(
     viewModel: MusicViewModel = viewModel(),
     playerViewModel: MusicPlayerViewModel
 ) {
-    var showSplash by rememberSaveable { mutableStateOf(showInitialSplash) }
+    var showSplash by rememberSaveable { mutableStateOf(false) }
     val musicList by viewModel.musicList.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
@@ -133,15 +133,6 @@ fun MusicHomeScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        if (showInitialSplash) {
-            delay(500)
-            showSplash = false
-        } else {
-            showSplash = false
-        }
-    }
-
     LaunchedEffect(searchQuery) {
         if (searchQuery.isBlank()) {
             viewModel.clearSearch()
@@ -188,7 +179,6 @@ fun MusicHomeScreen(
                 if (playerExpanded) {
                     playerExpanded = false
                 } else if (backEnabled) {
-                    playerViewModel.pause()
                     onBackClick()
                 }
             }
@@ -217,7 +207,6 @@ fun MusicHomeScreen(
                             modifier = Modifier
                                 .size(28.dp)
                                 .clickable(enabled = backEnabled) {
-                                    playerViewModel.pause()
                                     onBackClick()
                                 },
                             colorFilter = ColorFilter.tint(Color.White)

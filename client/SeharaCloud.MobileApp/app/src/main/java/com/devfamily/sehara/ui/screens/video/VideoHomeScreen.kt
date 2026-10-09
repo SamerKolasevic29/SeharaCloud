@@ -68,7 +68,7 @@ fun VideoHomeScreen(
     viewModel: VideoViewModel = viewModel(),
     playerViewModel: VideoPlayerViewModel = viewModel()
 ) {
-    var showSplash by rememberSaveable { mutableStateOf(showInitialSplash) }
+    var showSplash by rememberSaveable { mutableStateOf(false) }
     val videoList by viewModel.videoList.collectAsState()
     val recentList by viewModel.recentList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -80,14 +80,7 @@ fun VideoHomeScreen(
     var selectedTab by rememberSaveable { mutableStateOf(0) }
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    LaunchedEffect(Unit) {
-        if (showInitialSplash) {
-            delay(500)
-            showSplash = false
-        } else {
-            showSplash = false
-        }
-    }
+
 
     LaunchedEffect(searchQuery) {
         if (searchQuery.isBlank()) {

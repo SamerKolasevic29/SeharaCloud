@@ -1,7 +1,11 @@
 package com.devfamily.sehara.ui.navigation
 
 import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -30,7 +34,10 @@ fun AppNavigation() {
 
     NavHost(
         navController = navController,
-        startDestination = Routes.Landing.route
+        startDestination = Routes.Landing.route,
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF161616))
     ) {
         composable(Routes.Landing.route) {
             LandingScreen(

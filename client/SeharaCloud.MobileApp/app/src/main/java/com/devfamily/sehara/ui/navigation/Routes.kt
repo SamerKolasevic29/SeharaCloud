@@ -20,9 +20,4 @@ sealed class Routes(val route: String) {
             "document_viewer/$id/${Uri.encode(name)}"
     }
 
-    object DocsCategory : Routes("docs_category/{category}") {
-        fun createRoute(category: String) =
-            "docs_category/$category"
-    }
-
 }

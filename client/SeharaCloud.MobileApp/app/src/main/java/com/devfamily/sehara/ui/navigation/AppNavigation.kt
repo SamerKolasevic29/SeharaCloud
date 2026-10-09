@@ -19,8 +19,6 @@ import com.devfamily.sehara.ui.screens.music.MusicPlayerViewModel
 import com.devfamily.sehara.ui.screens.video.VideoHomeScreen
 import com.devfamily.sehara.ui.screens.docs.DocumentsScreen
 import com.devfamily.sehara.ui.screens.docs.DocumentViewerScreen
-import com.devfamily.sehara.ui.screens.docs.DocsCategoryScreen
-import com.devfamily.sehara.ui.screens.docs.DocsCategory
 import com.devfamily.sehara.ui.screens.photo.PhotoHostScreen
 import com.devfamily.sehara.ui.screens.photo.PhotoViewModel
 
@@ -77,42 +75,11 @@ fun AppNavigation() {
                     navController.navigate(
                         Routes.DocumentViewer.createRoute(doc.id, doc.title ?: "Untitled")
                     )
-                },
-                onDocumentsCategoryClick = {
-                    navController.navigate(Routes.DocsCategory.createRoute("documents"))
-                },
-                onBooksClick = {
-                    navController.navigate(Routes.DocsCategory.createRoute("books"))
-                },
-                onOthersClick = {
-                    navController.navigate(Routes.DocsCategory.createRoute("others"))
                 }
             )
         }
 
-        composable(
-            route = Routes.DocsCategory.route,
-            arguments = listOf(
-                navArgument("category") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val categoryArg = backStackEntry.arguments?.getString("category") ?: "documents"
-            val category = when (categoryArg) {
-                "books" -> DocsCategory.BOOKS
-                "others" -> DocsCategory.OTHERS
-                else -> DocsCategory.DOCUMENTS
-            }
 
-            DocsCategoryScreen(
-                category = category,
-                onBackClick = { navController.popBackStack() },
-                onDocumentClick = { doc ->
-                    navController.navigate(
-                        Routes.DocumentViewer.createRoute(doc.id, doc.title ?: "Untitled")
-                    )
-                }
-            )
-        }
 
         composable(
             route = Routes.DocumentViewer.route,

@@ -22,16 +22,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -41,39 +43,81 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.devfamily.sehara.R
 import com.devfamily.sehara.data.DocumentItem
-import com.devfamily.sehara.ui.components.CategoryCard
-import com.devfamily.sehara.ui.components.DocListScrollable
-import com.devfamily.sehara.ui.components.DocsGridView
 import com.devfamily.sehara.ui.components.SearchBar
 import kotlinx.coroutines.delay
 
-private enum class DocsViewMode { LIST, GRID }
+@Composable
+private fun DocRow(
+    item: DocumentItem,
+    showDivider: Boolean,
+    onClick: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onClick() }
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFF201F1F)),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_docs),
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                    colorFilter = ColorFilter.tint(Color(0xFFFF3054))
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = item.title?.takeIf { it.isNotBlank() } ?: "Untitled",
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
+                color = Color.White,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        if (showDivider) {
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 20.dp),
+                color = Color(0xFF767676),
+                thickness = 0.5.dp
+            )
+        }
+    }
+}
 
 @Composable
 fun DocumentsScreen(
     modifier: Modifier = Modifier,
     onBackClick: () -> Unit = {},
     onDocumentClick: (DocumentItem) -> Unit = {},
-    onDocumentsCategoryClick: () -> Unit = {},
-    onBooksClick: () -> Unit = {},
-    onOthersClick: () -> Unit = {},
     viewModel: DocumentsViewModel = viewModel()
 ) {
     val docsList by viewModel.docsList.collectAsState()
+    val recentList by viewModel.recentList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
-    var viewMode by rememberSaveable { mutableStateOf(DocsViewMode.LIST) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(searchQuery) {
@@ -85,19 +129,24 @@ fun DocumentsScreen(
         }
     }
 
+    val currentList = if (selectedTab == 0) recentList else docsList
+
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
-                .statusBarsPadding()
+                .background(Color(0xFF201F1F))
                 .navigationBarsPadding()
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(start = 32.dp, top = 32.dp, end = 32.dp, bottom = 12.dp),
+                    .background(
+                        color = Color(0xFF161616),
+                        shape = RoundedCornerShape(bottomStart = 25.dp, bottomEnd = 25.dp)
+                    )
+                    .statusBarsPadding()
+                    .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -105,194 +154,53 @@ fun DocumentsScreen(
                     painter = painterResource(id = R.drawable.ic_arrow_back),
                     contentDescription = null,
                     modifier = Modifier
-                        .size(36.dp)
-                        .clickable { onBackClick() }
+                        .size(28.dp)
+                        .clickable { onBackClick() },
+                    colorFilter = ColorFilter.tint(Color.White)
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Text(
-                        text = "Docs",
-                        style = MaterialTheme.typography.displayMedium,
-                        color = Color(0xFF999999)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
                     Image(
                         painter = painterResource(id = R.drawable.ic_docs),
                         contentDescription = null,
-                        modifier = Modifier.size(30.dp),
-                        colorFilter = ColorFilter.tint(Color(0xFF9F001E))
+                        modifier = Modifier.size(40.dp),
+                        colorFilter = ColorFilter.tint(Color(0xFFFF3054))
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Docs",
+                        style = MaterialTheme.typography.displayMedium.copy(letterSpacing = 0.sp),
+                        color = Color.White
                     )
                 }
-                Spacer(modifier = Modifier.size(36.dp))
+                Spacer(modifier = Modifier.size(28.dp))
             }
 
-            Column(
+            LazyColumn(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(bottom = 24.dp),
+                    .fillMaxWidth()
+                    .weight(1f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                SearchBar(
-                    query = searchQuery,
-                    onQueryChange = { searchQuery = it }
-                )
-
-                AnimatedVisibility(
-                    visible = searchQuery.isNotBlank(),
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .padding(top = 12.dp)
-                            .width(332.dp)
-                            .border(
-                                width = 1.dp,
-                                color = Color(0xFFC70025),
-                                shape = RoundedCornerShape(24.dp)
-                            )
-                            .background(
-                                color = Color.White,
-                                shape = RoundedCornerShape(24.dp)
-                            )
-                            .padding(vertical = 8.dp)
-                    ) {
-                        when {
-                            isSearching -> {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(80.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator(color = Color(0xFFC70025))
-                                }
-                            }
-                            searchResults.isEmpty() -> {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(80.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "No results found",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = Color(0xFF8E8D8D)
-                                    )
-                                }
-                            }
-                            else -> {
-                                DocListScrollable(items = searchResults) { onDocumentClick(it) }
-                            }
-                        }
-                    }
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    SearchBar(
+                        query = searchQuery,
+                        onQueryChange = { searchQuery = it }
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
-                    modifier = Modifier.width(332.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .border(
-                                width = 1.dp,
-                                color = Color(0xFFC70025),
-                                shape = RoundedCornerShape(50.dp)
-                            )
-                            .background(
-                                color = if (viewMode == DocsViewMode.LIST) Color(0xFFC70025) else Color.White,
-                                shape = RoundedCornerShape(50.dp)
-                            )
-                            .clip(RoundedCornerShape(50.dp))
-                            .clickable { viewMode = DocsViewMode.LIST }
-                            .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
+                item {
+                    AnimatedVisibility(
+                        visible = searchQuery.isNotBlank(),
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
                     ) {
-                        Text(
-                            text = "List",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = if (viewMode == DocsViewMode.LIST) Color.White else Color(0xFFC70025)
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .border(
-                                width = 1.dp,
-                                color = Color(0xFFC70025),
-                                shape = RoundedCornerShape(50.dp)
-                            )
-                            .background(
-                                color = if (viewMode == DocsViewMode.GRID) Color(0xFFC70025) else Color.White,
-                                shape = RoundedCornerShape(50.dp)
-                            )
-                            .clip(RoundedCornerShape(50.dp))
-                            .clickable { viewMode = DocsViewMode.GRID }
-                            .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Grid",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = if (viewMode == DocsViewMode.GRID) Color.White else Color(0xFFC70025)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                when {
-                    isLoading -> {
-                        Box(
-                            modifier = Modifier
-                                .width(332.dp)
-                                .height(100.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = Color(0xFFC70025))
-                        }
-                    }
-                    error != null -> {
-                        Box(
-                            modifier = Modifier
-                                .width(332.dp)
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Error: $error",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF8E8D8D)
-                            )
-                        }
-                    }
-                    docsList.isEmpty() -> {
-                        Box(
-                            modifier = Modifier
-                                .width(332.dp)
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "No documents found",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF8E8D8D)
-                            )
-                        }
-                    }
-                    viewMode == DocsViewMode.LIST -> {
                         Column(
                             modifier = Modifier
+                                .padding(top = 12.dp)
                                 .width(332.dp)
                                 .border(
                                     width = 1.dp,
@@ -300,69 +208,194 @@ fun DocumentsScreen(
                                     shape = RoundedCornerShape(24.dp)
                                 )
                                 .background(
-                                    color = Color.White,
+                                    color = Color(0xFF201F1F),
                                     shape = RoundedCornerShape(24.dp)
                                 )
+                                .padding(vertical = 8.dp)
                         ) {
-                            DocListScrollable(items = docsList) { onDocumentClick(it) }
+                            when {
+                                isSearching -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(80.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(color = Color(0xFFC70025))
+                                    }
+                                }
+                                searchResults.isEmpty() -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(80.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "No results found",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color(0xFF8E8D8D)
+                                        )
+                                    }
+                                }
+                                else -> {
+                                    searchResults.take(8).forEachIndexed { index, doc ->
+                                        DocRow(
+                                            item = doc,
+                                            showDivider = index < minOf(searchResults.size, 8) - 1,
+                                            onClick = {
+                                                keyboardController?.hide()
+                                                onDocumentClick(doc)
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Row(
+                        modifier = Modifier.width(332.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .border(
+                                    width = 1.dp,
+                                    color = Color(0xFFC70025),
+                                    shape = RoundedCornerShape(50.dp)
+                                )
+                                .background(
+                                    color = if (selectedTab == 0) Color(0xFFC70025) else Color(0xFF201F1F),
+                                    shape = RoundedCornerShape(50.dp)
+                                )
+                                .clip(RoundedCornerShape(50.dp))
+                                .clickable { selectedTab = 0 }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Recent",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = if (selectedTab == 0) Color.White else Color(0xFFC70025)
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .border(
+                                    width = 1.dp,
+                                    color = Color(0xFFC70025),
+                                    shape = RoundedCornerShape(50.dp)
+                                )
+                                .background(
+                                    color = if (selectedTab == 1) Color(0xFFC70025) else Color(0xFF201F1F),
+                                    shape = RoundedCornerShape(50.dp)
+                                )
+                                .clip(RoundedCornerShape(50.dp))
+                                .clickable { selectedTab = 1 }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "All",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = if (selectedTab == 1) Color.White else Color(0xFFC70025)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                when {
+                    isLoading -> {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .width(332.dp)
+                                    .height(100.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = Color(0xFFC70025))
+                            }
+                        }
+                    }
+                    error != null -> {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .width(332.dp)
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Error: $error",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFF8E8D8D)
+                                )
+                            }
+                        }
+                    }
+                    currentList.isEmpty() -> {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .width(332.dp)
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (selectedTab == 0) "No recent documents" else "No documents found",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFF8E8D8D)
+                                )
+                            }
                         }
                     }
                     else -> {
-                        DocsGridView(items = docsList) { onDocumentClick(it) }
+                        itemsIndexed(
+                            items = currentList,
+                            key = { index, doc -> "${selectedTab}_${doc.id}_$index" }
+                        ) { index, doc ->
+                            val first = index == 0
+                            val last = index == currentList.lastIndex
+                            Box(
+                                modifier = Modifier
+                                    .width(332.dp)
+                                    .background(
+                                        color = Color.Black,
+                                        shape = RoundedCornerShape(
+                                            topStart = if (first) 24.dp else 0.dp,
+                                            topEnd = if (first) 24.dp else 0.dp,
+                                            bottomStart = if (last) 24.dp else 0.dp,
+                                            bottomEnd = if (last) 24.dp else 0.dp
+                                        )
+                                    )
+                                    .clip(
+                                        RoundedCornerShape(
+                                            topStart = if (first) 24.dp else 0.dp,
+                                            topEnd = if (first) 24.dp else 0.dp,
+                                            bottomStart = if (last) 24.dp else 0.dp,
+                                            bottomEnd = if (last) 24.dp else 0.dp
+                                        )
+                                    )
+                            ) {
+                                DocRow(
+                                    item = doc,
+                                    showDivider = !last,
+                                    onClick = { onDocumentClick(doc) }
+                                )
+                            }
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(48.dp))
-
-                Box(modifier = Modifier.width(332.dp)) {
-                    Text(
-                        text = "More Categories",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color(0xFFB30021)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    CategoryCard(
-                        modifier = Modifier.weight(1f),
-                        backgroundImage = R.drawable.home_docs_card,
-                        label = "Documents",
-                        onClick = onDocumentsCategoryClick
-                    )
-                    CategoryCard(
-                        modifier = Modifier.weight(1f),
-                        backgroundImage = R.drawable.home_docs_card,
-                        label = "Books",
-                        onClick = onBooksClick
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.75f)
-                        .height(180.dp)
-                        .clickable { onOthersClick() },
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.home_docs_card),
-                        contentDescription = null,
-                        contentScale = ContentScale.FillBounds,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    Text(
-                        text = "Others",
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(bottom = 14.dp)
-                    )
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }

@@ -11,12 +11,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,10 +30,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.devfamily.sehara.R
 import com.devfamily.sehara.data.RetrofitClient
@@ -50,12 +50,11 @@ fun DocumentViewerScreen(
     documentName: String,
     onBackClick: () -> Unit = {}
 ) {
-    val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }
     var hasError by remember { mutableStateOf(false) }
     var pdfBytes by remember { mutableStateOf<ByteArray?>(null) }
 
-    val streamUrl = "${RetrofitClient.BASE_URL}api/stream/$documentId"
+    val streamUrl = "${RetrofitClient.BASE_URL.trimEnd('/')}/api/documents/$documentId/stream"
 
     LaunchedEffect(documentId) {
         isLoading = true
@@ -76,15 +75,18 @@ fun DocumentViewerScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
-                .statusBarsPadding()
+                .background(Color(0xFF201F1F))
                 .navigationBarsPadding()
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(start = 32.dp, top = 32.dp, end = 32.dp, bottom = 12.dp),
+                    .background(
+                        color = Color(0xFF161616),
+                        shape = RoundedCornerShape(bottomStart = 25.dp, bottomEnd = 25.dp)
+                    )
+                    .statusBarsPadding()
+                    .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -92,30 +94,41 @@ fun DocumentViewerScreen(
                     painter = painterResource(id = R.drawable.ic_arrow_back),
                     contentDescription = null,
                     modifier = Modifier
-                        .size(36.dp)
-                        .clickable { onBackClick() }
+                        .size(28.dp)
+                        .clickable { onBackClick() },
+                    colorFilter = ColorFilter.tint(Color.White)
                 )
                 Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Text(
-                        text = "Docs",
-                        style = MaterialTheme.typography.displayMedium,
-                        color = Color(0xFF999999)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
                     Image(
                         painter = painterResource(id = R.drawable.ic_docs),
                         contentDescription = null,
-                        modifier = Modifier.size(30.dp),
-                        colorFilter = ColorFilter.tint(Color(0xFF9F001E))
+                        modifier = Modifier.size(40.dp),
+                        colorFilter = ColorFilter.tint(Color(0xFFFF3054))
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = documentName,
+                        style = MaterialTheme.typography.titleLarge.copy(letterSpacing = 0.sp),
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                 }
-                Spacer(modifier = Modifier.size(36.dp))
+                Spacer(modifier = Modifier.size(28.dp))
             }
 
-            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
                 when {
                     hasError -> {
                         Box(
@@ -134,7 +147,9 @@ fun DocumentViewerScreen(
                             modifier = Modifier.fillMaxSize(),
                             factory = { ctx ->
                                 FrameLayout(ctx).apply {
+                                    setBackgroundColor(android.graphics.Color.parseColor("#201F1F"))
                                     val pdfView = PDFView(ctx, null)
+                                    pdfView.setBackgroundColor(android.graphics.Color.parseColor("#201F1F"))
                                     addView(
                                         pdfView,
                                         FrameLayout.LayoutParams(
@@ -147,6 +162,7 @@ fun DocumentViewerScreen(
                                         .swipeHorizontal(false)
                                         .enableDoubletap(true)
                                         .defaultPage(0)
+                                        .spacing(8)
                                         .load()
                                 }
                             }
@@ -158,7 +174,7 @@ fun DocumentViewerScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color.White),
+                            .background(Color(0xFF201F1F)),
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator(color = Color(0xFFC70025))
@@ -166,28 +182,6 @@ fun DocumentViewerScreen(
                 }
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(horizontal = 32.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_docs),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    colorFilter = ColorFilter.tint(Color(0xFFC70025))
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = documentName,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = Color(0xFF333333),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
         }
     }
 }

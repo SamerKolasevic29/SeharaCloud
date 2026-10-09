@@ -212,6 +212,11 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         currentQueueIndex = -1
     }
 
+    fun pause() {
+        controller?.pause()
+        _isPlaying.value = false
+    }
+
     fun togglePlayPause() {
         val player = controller ?: return
         if (player.isPlaying) {

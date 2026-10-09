@@ -143,8 +143,13 @@ fun MusicHomeScreen(
                 }
             }
         } else {
-            BackHandler(enabled = playerExpanded) {
-                playerExpanded = false
+            BackHandler {
+                if (playerExpanded) {
+                    playerExpanded = false
+                } else if (backEnabled) {
+                    playerViewModel.pause()
+                    onBackClick()
+                }
             }
             Box(modifier = modifier.fillMaxSize()) {
                 Column(
@@ -170,7 +175,10 @@ fun MusicHomeScreen(
                             contentDescription = null,
                             modifier = Modifier
                                 .size(28.dp)
-                                .clickable(enabled = backEnabled) { onBackClick() },
+                                .clickable(enabled = backEnabled) {
+                                    playerViewModel.pause()
+                                    onBackClick()
+                                },
                             colorFilter = ColorFilter.tint(Color.White)
                         )
                         Row(

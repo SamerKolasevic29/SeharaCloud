@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -61,6 +63,7 @@ fun HomeScreen(
                         color = Color(0xFF161616),
                         shape = RoundedCornerShape(bottomStart = 25.dp, bottomEnd = 25.dp)
                     )
+                    .statusBarsPadding()
                     .padding(horizontal = 24.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -154,6 +157,7 @@ fun HomeScreen(
             Button(
                 onClick = { (context as? Activity)?.finish() },
                 modifier = Modifier
+                    .navigationBarsPadding()
                     .padding(bottom = 40.dp)
                     .fillMaxWidth(0.4f)
                     .heightIn(min = 46.dp)

@@ -40,6 +40,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.Constraints
+import kotlin.math.roundToInt
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -85,6 +98,33 @@ fun MusicHomeScreen(
     var backEnabled by remember { mutableStateOf(true) }
     val keyboardController = LocalSoftwareKeyboardController.current
 
+    var collapseOffset by remember { mutableFloatStateOf(0f) }
+    var topHeightPx by remember { mutableIntStateOf(0) }
+
+    val collapseConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (searchQuery.isNotBlank() || available.y >= 0f) return Offset.Zero
+                val newOffset = (collapseOffset + available.y).coerceIn(-topHeightPx.toFloat(), 0f)
+                val consumedY = newOffset - collapseOffset
+                collapseOffset = newOffset
+                return Offset(0f, consumedY)
+            }
+
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource
+            ): Offset {
+                if (searchQuery.isNotBlank() || available.y <= 0f) return Offset.Zero
+                val newOffset = (collapseOffset + available.y).coerceIn(-topHeightPx.toFloat(), 0f)
+                val consumedY = newOffset - collapseOffset
+                collapseOffset = newOffset
+                return Offset(0f, consumedY)
+            }
+        }
+    }
+
     LaunchedEffect(playerExpanded) {
         if (!playerExpanded) {
             backEnabled = false
@@ -106,6 +146,7 @@ fun MusicHomeScreen(
         if (searchQuery.isBlank()) {
             viewModel.clearSearch()
         } else {
+            collapseOffset = 0f
             delay(300)
             viewModel.searchMusic(searchQuery)
         }
@@ -210,13 +251,35 @@ fun MusicHomeScreen(
 
                     Column(
                         modifier = Modifier
-                            .fillMaxSize(),
+                            .fillMaxSize()
+                            .nestedScroll(collapseConnection),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .verticalScroll(rememberScrollState()),
+                                .clipToBounds()
+                                .layout { measurable, constraints ->
+                                    val placeable = measurable.measure(
+                                        constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity)
+                                    )
+                                    val offset = collapseOffset.coerceIn(-placeable.height.toFloat(), 0f)
+                                    val visibleHeight = (placeable.height + offset).roundToInt().coerceAtLeast(0)
+                                    layout(placeable.width, visibleHeight) {
+                                        placeable.place(0, offset.roundToInt())
+                                    }
+                                }
+                                .graphicsLayer {
+                                    val progress = if (topHeightPx > 0) {
+                                        (-collapseOffset / topHeightPx).coerceIn(0f, 1f)
+                                    } else 0f
+                                    alpha = (1f - progress * 1.4f).coerceIn(0f, 1f)
+                                    val s = 1f - 0.12f * progress
+                                    scaleX = s
+                                    scaleY = s
+                                    transformOrigin = TransformOrigin(0.5f, 0f)
+                                }
+                                .onSizeChanged { topHeightPx = it.height },
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Spacer(modifier = Modifier.height(16.dp))

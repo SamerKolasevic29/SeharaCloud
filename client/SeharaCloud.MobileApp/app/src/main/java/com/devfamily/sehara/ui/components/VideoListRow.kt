@@ -1,8 +1,10 @@
 package com.devfamily.sehara.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
@@ -32,6 +35,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.devfamily.sehara.R
 import com.devfamily.sehara.data.VideoItem
@@ -118,6 +122,106 @@ fun VideoListScrollable(
     ) {
         items(items, key = { it.id }) { item ->
             VideoListRow(item = item, onClick = { onItemClick(item) })
+        }
+    }
+}
+
+private fun formatVideoDuration(seconds: Int): String {
+    val hours = seconds / 3600
+    val minutes = (seconds % 3600) / 60
+    val secs = seconds % 60
+    return if (hours > 0) {
+        "%d:%02d:%02d".format(hours, minutes, secs)
+    } else {
+        "%d:%02d".format(minutes, secs)
+    }
+}
+
+@Composable
+fun VideoRecentRow(item: VideoItem, onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val imageModel = remember(item.thumbnailUrl, item.id) {
+        if (!item.thumbnailUrl.isNullOrEmpty()) item.thumbnailUrl else null
+    }
+    val duration = item.durationSec ?: 0
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(VIDEO_ROW_SHAPE)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(color = Color(0xFFC70025)),
+                onClick = onClick
+            )
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AsyncImage(
+            model = imageModel,
+            contentDescription = null,
+            modifier = Modifier
+                .size(width = 96.dp, height = 56.dp)
+                .clip(RoundedCornerShape(12.dp)),
+            contentScale = ContentScale.Crop,
+            error = painterResource(id = R.drawable.ic_unknown_video),
+            placeholder = painterResource(id = R.drawable.ic_unknown_video),
+            fallback = painterResource(id = R.drawable.ic_unknown_video)
+        )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
+                color = Color(0xFFC70025),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (duration > 0) {
+                Text(
+                    text = formatVideoDuration(duration),
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                    color = Color(0xFF8E8D8D),
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun VideoRecentSection(
+    items: List<VideoItem>,
+    onItemClick: (VideoItem) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(
+                color = Color.Black,
+                shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
+            )
+            .padding(top = 8.dp, bottom = 24.dp)
+    ) {
+        Text(
+            text = "Recent videos",
+            style = MaterialTheme.typography.titleMedium,
+            color = Color.White,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+        )
+
+        items.forEachIndexed { index, item ->
+            VideoRecentRow(item = item, onClick = { onItemClick(item) })
+            if (index < items.lastIndex) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                    color = Color(0xFF767676),
+                    thickness = 0.5.dp
+                )
+            }
         }
     }
 }

@@ -158,7 +158,8 @@ fun VideoHomeScreen(
                         Box(modifier = Modifier.statusBarsPadding()) {
                             VideoPlayerOverlay(
                                 viewModel = playerViewModel,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                recentList = recentList
                             )
                         }
                     }

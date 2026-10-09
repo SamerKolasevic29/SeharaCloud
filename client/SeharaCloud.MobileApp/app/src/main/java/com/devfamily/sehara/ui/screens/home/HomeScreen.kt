@@ -11,10 +11,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -46,7 +49,11 @@ fun HomeScreen(
             .fillMaxSize()
             .background(Color(0xFF201F1F))
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -142,14 +149,14 @@ fun HomeScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(32.dp))
 
             Button(
                 onClick = { (context as? Activity)?.finish() },
                 modifier = Modifier
                     .padding(bottom = 40.dp)
                     .fillMaxWidth(0.4f)
-                    .height(46.dp)
+                    .heightIn(min = 46.dp)
                     .align(Alignment.CenterHorizontally),
                 shape = RoundedCornerShape(150.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9F001E))

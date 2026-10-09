@@ -35,7 +35,7 @@ fun CategoryCard(
 ) {
     Box(
         modifier = modifier
-            .height(280.dp)
+            .height(260.dp)
             .clip(shape)
             .clickable { onClick() }
     ) {

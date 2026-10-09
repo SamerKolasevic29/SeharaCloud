@@ -17,8 +17,6 @@ import com.devfamily.sehara.ui.screens.music.MusicHomeScreen
 import com.devfamily.sehara.ui.screens.music.MusicListScreen
 import com.devfamily.sehara.ui.screens.music.MusicPlayerViewModel
 import com.devfamily.sehara.ui.screens.video.VideoHomeScreen
-import com.devfamily.sehara.ui.screens.video.VideoCategoryScreen
-import com.devfamily.sehara.ui.screens.video.VideoCategory
 import com.devfamily.sehara.ui.screens.docs.DocumentsScreen
 import com.devfamily.sehara.ui.screens.docs.DocumentViewerScreen
 import com.devfamily.sehara.ui.screens.docs.DocsCategoryScreen
@@ -69,34 +67,6 @@ fun AppNavigation() {
 
         composable(Routes.Video.route) {
             VideoHomeScreen(
-                onBackClick = { navController.popBackStack() },
-                onMovieClick = {
-                    navController.navigate(Routes.VideoCategory.createRoute("movie"))
-                },
-                onOtherClick = {
-                    navController.navigate(Routes.VideoCategory.createRoute("other"))
-                },
-                onDocumentaryClick = {
-                    navController.navigate(Routes.VideoCategory.createRoute("documentary"))
-                }
-            )
-        }
-
-        composable(
-            route = Routes.VideoCategory.route,
-            arguments = listOf(
-                navArgument("category") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val categoryArg = backStackEntry.arguments?.getString("category") ?: "movie"
-            val category = when (categoryArg) {
-                "documentary" -> VideoCategory.DOCUMENTARY
-                "other" -> VideoCategory.OTHER
-                else -> VideoCategory.MOVIE
-            }
-
-            VideoCategoryScreen(
-                category = category,
                 onBackClick = { navController.popBackStack() }
             )
         }

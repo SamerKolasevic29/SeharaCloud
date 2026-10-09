@@ -90,14 +90,16 @@ fun VideoPlayerOverlay(
     val context = LocalContext.current
     var videoAspectRatio by remember(video.id) { mutableFloatStateOf(16f / 9f) }
 
-    LaunchedEffect(video.id) {
-        viewModel.exoPlayer.addListener(object : androidx.media3.common.Player.Listener {
+    DisposableEffect(video.id) {
+        val listener = object : androidx.media3.common.Player.Listener {
             override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
                 if (videoSize.width > 0 && videoSize.height > 0) {
                     videoAspectRatio = videoSize.width.toFloat() / videoSize.height.toFloat()
                 }
             }
-        })
+        }
+        viewModel.exoPlayer.addListener(listener)
+        onDispose { viewModel.exoPlayer.removeListener(listener) }
     }
 
     when (playerMode) {

@@ -79,7 +79,7 @@ fun VideoListRow(item: VideoItem, onClick: () -> Unit = {}) {
         Text(
             text = item.title,
             style = MaterialTheme.typography.titleSmall,
-            color = Color(0xFFC70025),
+            color = Color.White,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )

@@ -13,7 +13,6 @@ sealed class Routes(val route: String) {
     }
     object Photo : Routes("photo")
     object Video : Routes("video")
-    object Movie : Routes("movie")
     object Docs : Routes("docs")
 
     object DocumentViewer : Routes("document_viewer/{id}/{name}") {
@@ -24,10 +23,6 @@ sealed class Routes(val route: String) {
     object DocsCategory : Routes("docs_category/{category}") {
         fun createRoute(category: String) =
             "docs_category/$category"
-    }
-
-    object VideoCategory : Routes("video_category/{category}") {
-        fun createRoute(category: String) = "video_category/$category"
     }
 
     object PhotoViewer : Routes("photo_viewer/{index}") {

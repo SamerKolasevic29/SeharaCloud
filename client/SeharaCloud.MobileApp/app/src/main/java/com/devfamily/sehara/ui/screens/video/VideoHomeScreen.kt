@@ -21,8 +21,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,12 +43,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.devfamily.sehara.R
 import com.devfamily.sehara.ui.components.CategoryCard
@@ -54,19 +59,12 @@ import com.devfamily.sehara.ui.components.SearchBar
 import com.devfamily.sehara.ui.components.VideoListScrollable
 import com.devfamily.sehara.ui.components.VideoPlayerOverlay
 import kotlinx.coroutines.delay
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.ui.draw.clip
 
 @Composable
 fun VideoHomeScreen(
     modifier: Modifier = Modifier,
     showInitialSplash: Boolean = true,
     onBackClick: () -> Unit = {},
-    onMovieClick: () -> Unit = {},
-    onOtherClick: () -> Unit = {},
-    onDocumentaryClick: () -> Unit = {},
     viewModel: VideoViewModel = viewModel(),
     playerViewModel: VideoPlayerViewModel = viewModel()
 ) {
@@ -153,26 +151,33 @@ fun VideoHomeScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.White)
-                        .statusBarsPadding()
+                        .background(Color(0xFF201F1F))
                         .navigationBarsPadding()
                 ) {
                     if (playerMode == VideoPlayerMode.PORTRAIT) {
-                        VideoPlayerOverlay(
-                            viewModel = playerViewModel,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        Box(modifier = Modifier.statusBarsPadding()) {
+                            VideoPlayerOverlay(
+                                viewModel = playerViewModel,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
 
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color.White)
+                            .background(
+                                color = Color(0xFF161616),
+                                shape = RoundedCornerShape(bottomStart = 25.dp, bottomEnd = 25.dp)
+                            )
+                            .then(
+                                if (playerMode != VideoPlayerMode.PORTRAIT) Modifier.statusBarsPadding() else Modifier
+                            )
                             .padding(
-                                start = 32.dp,
-                                top = if (playerMode == VideoPlayerMode.PORTRAIT) 16.dp else 32.dp,
-                                end = 32.dp,
-                                bottom = 12.dp
+                                start = 24.dp,
+                                top = if (playerMode == VideoPlayerMode.PORTRAIT) 16.dp else 24.dp,
+                                end = 24.dp,
+                                bottom = 16.dp
                             ),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -181,37 +186,37 @@ fun VideoHomeScreen(
                             painter = painterResource(id = R.drawable.ic_arrow_back),
                             contentDescription = null,
                             modifier = Modifier
-                                .size(36.dp)
-                                .clickable { onBackClick() }
+                                .size(28.dp)
+                                .clickable { onBackClick() },
+                            colorFilter = ColorFilter.tint(Color.White)
                         )
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
-                            Text(
-                                text = "Video",
-                                style = MaterialTheme.typography.displayMedium,
-                                color = Color(0xFF999999)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
                             Image(
                                 painter = painterResource(id = R.drawable.ic_video),
                                 contentDescription = null,
-                                modifier = Modifier.size(30.dp),
-                                colorFilter = ColorFilter.tint(Color(0xFF9F001E))
+                                modifier = Modifier.size(45.dp),
+                                colorFilter = ColorFilter.tint(Color(0xFFFF3054))
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Video",
+                                style = MaterialTheme.typography.displayMedium.copy(letterSpacing = 0.sp),
+                                color = Color.White
                             )
                         }
-                        Spacer(modifier = Modifier.size(36.dp))
+                        Spacer(modifier = Modifier.size(28.dp))
                     }
 
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(bottom = 24.dp),
+                            .verticalScroll(rememberScrollState()),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         SearchBar(
                             query = searchQuery,
@@ -233,7 +238,7 @@ fun VideoHomeScreen(
                                         shape = RoundedCornerShape(24.dp)
                                     )
                                     .background(
-                                        color = Color.White,
+                                        color = Color(0xFF201F1F),
                                         shape = RoundedCornerShape(24.dp)
                                     )
                                     .padding(vertical = 8.dp)
@@ -288,7 +293,7 @@ fun VideoHomeScreen(
                                         shape = RoundedCornerShape(50.dp)
                                     )
                                     .background(
-                                        color = if (selectedTab == 0) Color(0xFFC70025) else Color.White,
+                                        color = if (selectedTab == 0) Color(0xFFC70025) else Color(0xFF201F1F),
                                         shape = RoundedCornerShape(50.dp)
                                     )
                                     .clip(RoundedCornerShape(50.dp))
@@ -312,7 +317,7 @@ fun VideoHomeScreen(
                                         shape = RoundedCornerShape(50.dp)
                                     )
                                     .background(
-                                        color = if (selectedTab == 1) Color(0xFFC70025) else Color.White,
+                                        color = if (selectedTab == 1) Color(0xFFC70025) else Color(0xFF201F1F),
                                         shape = RoundedCornerShape(50.dp)
                                     )
                                     .clip(RoundedCornerShape(50.dp))
@@ -379,7 +384,7 @@ fun VideoHomeScreen(
                                                 shape = RoundedCornerShape(24.dp)
                                             )
                                             .background(
-                                                color = Color.White,
+                                                color = Color(0xFF201F1F),
                                                 shape = RoundedCornerShape(24.dp)
                                             )
                                     ) {
@@ -413,7 +418,7 @@ fun VideoHomeScreen(
                                                 shape = RoundedCornerShape(24.dp)
                                             )
                                             .background(
-                                                color = Color.White,
+                                                color = Color(0xFF201F1F),
                                                 shape = RoundedCornerShape(24.dp)
                                             )
                                     ) {
@@ -425,58 +430,7 @@ fun VideoHomeScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(48.dp))
-
-                        Box(modifier = Modifier.width(332.dp)) {
-                            Text(
-                                text = "More Categories",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Color(0xFFB30021)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            CategoryCard(
-                                modifier = Modifier.weight(1f),
-                                backgroundImage = R.drawable.video_movie_card,
-                                label = "Movie",
-                                onClick = onMovieClick
-                            )
-                            CategoryCard(
-                                modifier = Modifier.weight(1f),
-                                backgroundImage = R.drawable.video_other_card,
-                                label = "Other",
-                                onClick = onOtherClick
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(0.75f)
-                                .height(180.dp)
-                                .clickable { onDocumentaryClick() },
-                            contentAlignment = Alignment.BottomCenter
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.video_documentary_card),
-                                contentDescription = null,
-                                contentScale = ContentScale.FillBounds,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                            Text(
-                                text = "Documentary",
-                                color = Color.White,
-                                style = MaterialTheme.typography.titleLarge,
-                                modifier = Modifier.padding(bottom = 14.dp)
-                            )
-                        }
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
 

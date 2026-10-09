@@ -35,21 +35,6 @@ interface ApiService {
     @GET("api/videos/recent")
     suspend fun getRecentVideos(): List<VideoItem>
 
-    @GET("api/videos/movies")
-    suspend fun getMovies(): List<VideoItem>
-
-    @GET("api/videos/movies/search")
-    suspend fun searchMovies(@Query("q") term: String): List<VideoItem>
-
-    @GET("api/videos/documentaries")
-    suspend fun getDocumentaries(): List<VideoItem>
-
-    @GET("api/videos/documentaries/search")
-    suspend fun searchDocumentaries(@Query("q") term: String): List<VideoItem>
-
-    @GET("api/videos/other")
-    suspend fun getOtherVideos(): List<VideoItem>
-
     @GET("api/videos/search")
     suspend fun searchVideos(@Query("q") term: String): List<VideoItem>
 
@@ -85,6 +70,6 @@ interface ApiService {
     @GET("api/music/{id}/stream")
     suspend fun streamMusic(@Path("id") id: String): retrofit2.Response<okhttp3.ResponseBody>
 
-    @GET("api/thumbnails/{id}")
+    @GET("api/thumbnail/{id}")
     suspend fun getThumbnail(@Path("id") id: String): retrofit2.Response<okhttp3.ResponseBody>
 }

@@ -10,14 +10,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,9 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.unit.sp
 import com.devfamily.sehara.R
-import com.devfamily.sehara.data.PhotoItem
 import com.devfamily.sehara.ui.components.PhotoGridView
 
 @Composable
@@ -50,15 +47,18 @@ fun PhotoScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
-                .statusBarsPadding()
+                .background(Color(0xFF201F1F))
                 .navigationBarsPadding()
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
-                    .padding(start = 32.dp, top = 32.dp, end = 32.dp, bottom = 12.dp),
+                    .background(
+                        color = Color(0xFF161616),
+                        shape = RoundedCornerShape(bottomStart = 25.dp, bottomEnd = 25.dp)
+                    )
+                    .statusBarsPadding()
+                    .padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -66,43 +66,41 @@ fun PhotoScreen(
                     painter = painterResource(id = R.drawable.ic_arrow_back),
                     contentDescription = null,
                     modifier = Modifier
-                        .size(36.dp)
-                        .clickable { onBackClick() }
+                        .size(28.dp)
+                        .clickable { onBackClick() },
+                    colorFilter = ColorFilter.tint(Color.White)
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Text(
-                        text = "Photos",
-                        style = MaterialTheme.typography.displayMedium,
-                        color = Color(0xFF999999)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
                     Image(
                         painter = painterResource(id = R.drawable.ic_photo),
                         contentDescription = null,
-                        modifier = Modifier.size(30.dp),
-                        colorFilter = ColorFilter.tint(Color(0xFF9F001E))
+                        modifier = Modifier.size(40.dp),
+                        colorFilter = ColorFilter.tint(Color(0xFFFF3054))
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Photos",
+                        style = MaterialTheme.typography.displayMedium.copy(letterSpacing = 0.sp),
+                        color = Color.White
                     )
                 }
-                Spacer(modifier = Modifier.size(36.dp))
+                Spacer(modifier = Modifier.size(28.dp))
             }
 
-            Column(
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(bottom = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.TopCenter
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
-
                 when {
                     isLoading -> {
                         Box(
                             modifier = Modifier
-                                .width(332.dp)
+                                .fillMaxWidth()
                                 .padding(vertical = 40.dp),
                             contentAlignment = Alignment.Center
                         ) {
@@ -112,8 +110,8 @@ fun PhotoScreen(
                     error != null -> {
                         Box(
                             modifier = Modifier
-                                .width(332.dp)
-                                .padding(16.dp),
+                                .fillMaxWidth()
+                                .padding(24.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
@@ -126,8 +124,8 @@ fun PhotoScreen(
                     photoList.isEmpty() -> {
                         Box(
                             modifier = Modifier
-                                .width(332.dp)
-                                .padding(16.dp),
+                                .fillMaxWidth()
+                                .padding(24.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
@@ -138,9 +136,12 @@ fun PhotoScreen(
                         }
                     }
                     else -> {
-                        PhotoGridView(items = photoList) { photo ->
-                            val index = photoList.indexOf(photo)
-                            onPhotoClick(index)
+                        PhotoGridView(
+                            items = photoList,
+                            modifier = Modifier.fillMaxSize()
+                        ) { photo ->
+                            val index = photoList.indexOfFirst { it.id == photo.id }
+                            if (index >= 0) onPhotoClick(index)
                         }
                     }
                 }

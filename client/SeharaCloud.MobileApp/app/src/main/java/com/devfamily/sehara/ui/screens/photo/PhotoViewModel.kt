@@ -4,10 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.devfamily.sehara.data.PhotoItem
 import com.devfamily.sehara.data.RetrofitClient
+import com.devfamily.sehara.data.resolvedDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 class PhotoViewModel : ViewModel() {
 
@@ -28,7 +30,10 @@ class PhotoViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                _photoList.value = RetrofitClient.instance.getImages()
+                val result = RetrofitClient.instance.getImages()
+                _photoList.value = result.sortedWith(
+                    compareByDescending<PhotoItem> { it.resolvedDate() ?: LocalDate.MIN }
+                )
                 _error.value = null
             } catch (e: Exception) {
                 _error.value = e.toUserMessage()

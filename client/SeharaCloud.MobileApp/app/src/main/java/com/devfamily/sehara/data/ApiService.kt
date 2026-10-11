@@ -1,0 +1,72 @@
+package com.devfamily.sehara.data
+
+import retrofit2.http.GET
+import retrofit2.http.Path
+import retrofit2.http.Query
+import retrofit2.http.Streaming
+
+interface ApiService {
+
+    @GET("api/music")
+    suspend fun getMusic(): List<SongItem>
+
+    @GET("api/music/recent")
+    suspend fun getRecentMusic(): List<SongItem>
+
+    @GET("api/music/artists")
+    suspend fun getArtists(): List<ArtistItem>
+
+    @GET("api/music/artists/{artist}")
+    suspend fun getMusicByArtist(@Path("artist") artist: String): List<SongItem>
+
+    @GET("api/music/genres")
+    suspend fun getGenres(): List<GenreItem>
+
+    @GET("api/music/genres/{genre}")
+    suspend fun getMusicByGenre(@Path("genre") genre: String): List<SongItem>
+
+    @GET("api/music/search")
+    suspend fun searchMusic(@Query("q") term: String): List<SongItem>
+
+    @GET("api/music/artists/search")
+    suspend fun searchArtists(@Query("q") term: String): List<ArtistItem>
+
+    @GET("api/videos")
+    suspend fun getVideos(): List<VideoItem>
+
+    @GET("api/videos/recent")
+    suspend fun getRecentVideos(): List<VideoItem>
+
+    @GET("api/videos/search")
+    suspend fun searchVideos(@Query("q") term: String): List<VideoItem>
+
+    @GET("api/images")
+    suspend fun getImages(): List<PhotoItem>
+
+    @GET("api/images/{id}")
+    suspend fun getImageById(@Path("id") id: String): PhotoItem
+
+    @GET("api/documents")
+    suspend fun getDocuments(): List<DocumentItem>
+
+    @GET("api/documents/recent")
+    suspend fun getRecentDocuments(): List<DocumentItem>
+
+    @GET("api/documents/search")
+    suspend fun searchDocuments(@Query("q") term: String): List<DocumentItem>
+
+    @Streaming
+    @GET("api/documents/{id}/stream")
+    suspend fun streamDocument(@Path("id") id: String): retrofit2.Response<okhttp3.ResponseBody>
+
+    @Streaming
+    @GET("api/images/{id}/stream")
+    suspend fun streamImage(@Path("id") id: String): retrofit2.Response<okhttp3.ResponseBody>
+
+    @Streaming
+    @GET("api/music/{id}/stream")
+    suspend fun streamMusic(@Path("id") id: String): retrofit2.Response<okhttp3.ResponseBody>
+
+    @GET("api/thumbnail/{id}")
+    suspend fun getThumbnail(@Path("id") id: String): retrofit2.Response<okhttp3.ResponseBody>
+}

@@ -74,6 +74,9 @@ import com.devfamily.sehara.ui.components.MusicPlayerOverlay
 import com.devfamily.sehara.ui.components.RecentlyAddedSection
 import com.devfamily.sehara.ui.components.SearchBar
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 
 @Composable
 fun MusicHomeScreen(
@@ -378,7 +381,9 @@ fun MusicHomeScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f),
-                                bottomContentPadding = if (hasActiveSong) 100.dp else 0.dp,
+                                bottomContentPadding = if (hasActiveSong) {
+                                    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 132.dp
+                                } else 40.dp,
                                 currentSongId = currentSong.id,
                                 isPlaying = isPlaying
                             )

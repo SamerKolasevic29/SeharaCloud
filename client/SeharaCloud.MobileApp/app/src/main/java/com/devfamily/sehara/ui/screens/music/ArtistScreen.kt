@@ -60,6 +60,9 @@ import com.devfamily.sehara.data.ArtistItem
 import com.devfamily.sehara.ui.components.MusicPlayerOverlay
 import com.devfamily.sehara.ui.components.SearchBar
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 
 @Composable
 fun ArtistScreen(
@@ -154,7 +157,11 @@ fun ArtistScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
-                            .padding(bottom = if (hasActiveSong) 100.dp else 24.dp),
+                            .padding(
+                                bottom = if (hasActiveSong) {
+                                    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 132.dp
+                                } else 40.dp
+                            ),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Spacer(modifier = Modifier.height(16.dp))

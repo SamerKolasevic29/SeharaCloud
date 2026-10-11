@@ -56,6 +56,9 @@ import com.devfamily.sehara.R
 import com.devfamily.sehara.data.GenreItem
 import com.devfamily.sehara.ui.components.MusicPlayerOverlay
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 
 @Composable
 fun GenreScreen(
@@ -140,7 +143,11 @@ fun GenreScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
-                            .padding(bottom = if (hasActiveSong) 100.dp else 24.dp),
+                            .padding(
+                                bottom = if (hasActiveSong) {
+                                    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 132.dp
+                                } else 40.dp
+                            ),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Spacer(modifier = Modifier.height(24.dp))

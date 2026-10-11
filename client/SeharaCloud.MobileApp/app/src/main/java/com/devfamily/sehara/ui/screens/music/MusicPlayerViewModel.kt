@@ -12,8 +12,11 @@ import com.devfamily.sehara.data.PlayerConnection
 import com.devfamily.sehara.data.RetrofitClient
 import com.devfamily.sehara.data.SongItem
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -22,7 +25,8 @@ data class SongUiModel(
     val title: String = "Unknown Title",
     val artist: String = "Unknown Artist",
     val durationMs: Long = 0L,
-    val thumbnailUrl: String? = null
+    val thumbnailUrl: String? = null,
+    val genre: String? = null
 )
 
 @UnstableApi
@@ -42,6 +46,12 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
 
     private val _hasNext = MutableStateFlow(false)
     val hasNextFlow: StateFlow<Boolean> = _hasNext.asStateFlow()
+
+    private val _openArtist = MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 1)
+    val openArtist: SharedFlow<Pair<String, String>> = _openArtist.asSharedFlow()
+
+    private val _openGenre = MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 1)
+    val openGenre: SharedFlow<Pair<String, String>> = _openGenre.asSharedFlow()
 
     private var queue: List<SongItem> = emptyList()
     private var currentQueueIndex: Int = -1
@@ -76,7 +86,8 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
                             title = item.title ?: item.filename,
                             artist = item.artist ?: "Unknown Artist",
                             durationMs = (item.durationSec ?: 0) * 1000L,
-                            thumbnailUrl = item.thumbnailUrl
+                            thumbnailUrl = item.thumbnailUrl,
+                            genre = item.genre
                         )
                         _currentPosition.value = 0L
                         _hasPrevious.value = index > 0
@@ -108,11 +119,12 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         title: String,
         artist: String,
         durationMs: Long,
-        thumbnailUrl: String? = null
+        thumbnailUrl: String? = null,
+        genre: String? = null
     ) {
         val player = controller
         if (player == null) {
-            pendingLoad = { loadSong(songId, title, artist, durationMs, thumbnailUrl) }
+            pendingLoad = { loadSong(songId, title, artist, durationMs, thumbnailUrl, genre) }
             return
         }
 
@@ -128,7 +140,8 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
             title = title,
             artist = artist,
             durationMs = durationMs,
-            thumbnailUrl = thumbnailUrl
+            thumbnailUrl = thumbnailUrl,
+            genre = genre
         )
         _currentPosition.value = 0L
 
@@ -186,12 +199,37 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
             title = item.title ?: item.filename,
             artist = item.artist ?: "Unknown Artist",
             durationMs = (item.durationSec ?: 0) * 1000L,
-            thumbnailUrl = item.thumbnailUrl
+            thumbnailUrl = item.thumbnailUrl,
+            genre = item.genre
         )
         _currentPosition.value = 0L
         _isPlaying.value = true
         _hasPrevious.value = currentQueueIndex > 0
         _hasNext.value = currentQueueIndex < queue.size - 1
+    }
+
+    fun openCurrentArtist() {
+        val name = _currentSong.value.artist
+        if (name.isBlank() || name == "Unknown Artist") return
+        viewModelScope.launch {
+            try {
+                val artist = RetrofitClient.instance.getArtists().firstOrNull { it.name == name }
+                if (artist != null) _openArtist.tryEmit(artist.id to artist.name)
+            } catch (e: Exception) {
+            }
+        }
+    }
+
+    fun openCurrentGenre() {
+        val name = _currentSong.value.genre
+        if (name.isNullOrBlank()) return
+        viewModelScope.launch {
+            try {
+                val genre = RetrofitClient.instance.getGenres().firstOrNull { it.name.equals(name, ignoreCase = true) }
+                if (genre != null) _openGenre.tryEmit(genre.id to genre.name)
+            } catch (e: Exception) {
+            }
+        }
     }
 
     fun thumbnailAt(offset: Int): String? {

@@ -194,56 +194,14 @@ fun MusicPlayerOverlay(
                     )
                 }
                 .pointerInput(Unit) {
-                    val tracker = VelocityTracker()
-                    val minDistance = 40.dp.toPx()
-                    val flickDistance = 16.dp.toPx()
-                    val flickVelocity = 700f
                     detectHorizontalDragGestures(
-                        onDragStart = { tracker.resetTracking() },
                         onDragEnd = {
-                            if (progress.value == 0f) {
-                                if (kotlin.math.abs(dragOffsetX) > swipeThreshold) onClose()
-                                dragOffsetX = 0f
-                            } else if (progress.value == 1f) {
-                                val vx = tracker.calculateVelocity().x
-                                scope.launch {
-                                    val d = thumbDrag.value
-                                    val goNext = viewModel.hasNext &&
-                                            (d < -minDistance || (d < -flickDistance && vx < -flickVelocity))
-                                    val goPrev = viewModel.hasPrevious &&
-                                            (d > minDistance || (d > flickDistance && vx > flickVelocity))
-                                    when {
-                                        goNext -> {
-                                            thumbDrag.animateTo(-stepPx, tween(200))
-                                            viewModel.skipNext()
-                                            delay(700)
-                                            if (thumbDrag.value != 0f) thumbDrag.animateTo(0f, tween(200))
-                                        }
-                                        goPrev -> {
-                                            thumbDrag.animateTo(stepPx, tween(200))
-                                            viewModel.skipPrevious()
-                                            delay(700)
-                                            if (thumbDrag.value != 0f) thumbDrag.animateTo(0f, tween(200))
-                                        }
-                                        else -> thumbDrag.animateTo(0f, tween(250))
-                                    }
-                                }
-                            }
-                        },
-                        onDragCancel = {
+                            if (progress.value == 0f && kotlin.math.abs(dragOffsetX) > swipeThreshold) onClose()
                             dragOffsetX = 0f
-                            scope.launch { thumbDrag.animateTo(0f, tween(250)) }
                         },
-                        onHorizontalDrag = { change, dragAmount ->
-                            tracker.addPosition(change.uptimeMillis, change.position)
-                            if (progress.value == 0f) {
-                                dragOffsetX += dragAmount
-                            } else if (progress.value == 1f) {
-                                val raw = thumbDrag.value + dragAmount
-                                val blocked = (raw < 0f && !viewModel.hasNext) || (raw > 0f && !viewModel.hasPrevious)
-                                val delta = if (blocked) dragAmount * 0.3f else dragAmount
-                                scope.launch { thumbDrag.snapTo(thumbDrag.value + delta) }
-                            }
+                        onDragCancel = { dragOffsetX = 0f },
+                        onHorizontalDrag = { _, dragAmount ->
+                            if (progress.value == 0f) dragOffsetX += dragAmount
                         }
                     )
                 }
@@ -314,12 +272,80 @@ fun MusicPlayerOverlay(
                                         .clickable { onExpandChange(false) },
                                     colorFilter = ColorFilter.tint(Color.White)
                                 )
-                                Spacer(modifier = Modifier.width(32.dp))
+                                if (!song.genre.isNullOrBlank()) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.ic_genre),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .clickable {
+                                                if (progress.value == 1f) viewModel.openCurrentGenre()
+                                            },
+                                        colorFilter = ColorFilter.tint(Color.White)
+                                    )
+                                } else {
+                                    Spacer(modifier = Modifier.width(32.dp))
+                                }
                             }
 
                             Spacer(modifier = Modifier.height(48.dp))
 
-                            Box(modifier = Modifier.size(320.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .size(320.dp)
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) {
+                                        if (progress.value == 1f) viewModel.openCurrentArtist()
+                                    }
+                                    .pointerInput(Unit) {
+                                        val tracker = VelocityTracker()
+                                        val minDistance = 40.dp.toPx()
+                                        val flickDistance = 16.dp.toPx()
+                                        val flickVelocity = 700f
+                                        detectHorizontalDragGestures(
+                                            onDragStart = { tracker.resetTracking() },
+                                            onDragEnd = {
+                                                val vx = tracker.calculateVelocity().x
+                                                scope.launch {
+                                                    val d = thumbDrag.value
+                                                    val goNext = viewModel.hasNext &&
+                                                            (d < -minDistance || (d < -flickDistance && vx < -flickVelocity))
+                                                    val goPrev = viewModel.hasPrevious &&
+                                                            (d > minDistance || (d > flickDistance && vx > flickVelocity))
+                                                    when {
+                                                        goNext -> {
+                                                            thumbDrag.animateTo(-stepPx, tween(200))
+                                                            viewModel.skipNext()
+                                                            delay(700)
+                                                            if (thumbDrag.value != 0f) thumbDrag.animateTo(0f, tween(200))
+                                                        }
+                                                        goPrev -> {
+                                                            thumbDrag.animateTo(stepPx, tween(200))
+                                                            viewModel.skipPrevious()
+                                                            delay(700)
+                                                            if (thumbDrag.value != 0f) thumbDrag.animateTo(0f, tween(200))
+                                                        }
+                                                        else -> thumbDrag.animateTo(0f, tween(250))
+                                                    }
+                                                }
+                                            },
+                                            onDragCancel = {
+                                                scope.launch { thumbDrag.animateTo(0f, tween(250)) }
+                                            },
+                                            onHorizontalDrag = { change, dragAmount ->
+                                                tracker.addPosition(change.uptimeMillis, change.position)
+                                                if (progress.value == 1f) {
+                                                    val raw = thumbDrag.value + dragAmount
+                                                    val blocked = (raw < 0f && !viewModel.hasNext) || (raw > 0f && !viewModel.hasPrevious)
+                                                    val delta = if (blocked) dragAmount * 0.3f else dragAmount
+                                                    scope.launch { thumbDrag.snapTo(thumbDrag.value + delta) }
+                                                }
+                                            }
+                                        )
+                                    }
+                            ) {
                                 listOf(-1, 0, 1).forEach { rel ->
                                     val exists = when (rel) {
                                         -1 -> viewModel.hasPrevious

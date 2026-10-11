@@ -25,12 +25,36 @@ import com.devfamily.sehara.ui.screens.docs.DocumentsScreen
 import com.devfamily.sehara.ui.screens.docs.DocumentViewerScreen
 import com.devfamily.sehara.ui.screens.photo.PhotoHostScreen
 import com.devfamily.sehara.ui.screens.photo.PhotoViewModel
+import androidx.compose.runtime.LaunchedEffect
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     val playerViewModel: MusicPlayerViewModel = viewModel()
     val photoViewModel: PhotoViewModel = viewModel()
+
+    LaunchedEffect(Unit) {
+        playerViewModel.openArtist.collect { (id, name) ->
+            val entry = navController.currentBackStackEntry
+            val sameArtist = entry?.destination?.route == Routes.MusicList.route &&
+                    entry.arguments?.getString("type") == "artist" &&
+                    entry.arguments?.getString("id") == id
+            if (!sameArtist) {
+                navController.navigate(Routes.MusicList.createRoute("artist", id, name))
+            }
+        }
+    }
+    LaunchedEffect(Unit) {
+        playerViewModel.openGenre.collect { (id, name) ->
+            val entry = navController.currentBackStackEntry
+            val sameGenre = entry?.destination?.route == Routes.MusicList.route &&
+                    entry.arguments?.getString("type") == "genre" &&
+                    entry.arguments?.getString("id") == id
+            if (!sameGenre) {
+                navController.navigate(Routes.MusicList.createRoute("genre", id, name))
+            }
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -155,6 +179,16 @@ fun AppNavigation() {
             MusicListScreen(
                 filter = filter,
                 onBackClick = { navController.popBackStack() },
+                onArtistClick = {
+                    navController.navigate(Routes.Artist.route) {
+                        popUpTo(Routes.Music.route)
+                    }
+                },
+                onGenreClick = {
+                    navController.navigate(Routes.Genre.route) {
+                        popUpTo(Routes.Music.route)
+                    }
+                },
                 playerViewModel = playerViewModel
             )
         }

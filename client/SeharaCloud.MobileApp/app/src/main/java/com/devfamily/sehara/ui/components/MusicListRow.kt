@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.devfamily.sehara.R
 import com.devfamily.sehara.data.SongItem
+import androidx.compose.foundation.indication
 
 private val ROW_HEIGHT = 70.dp
 private const val MAX_VISIBLE_ITEMS = 5
@@ -99,7 +100,7 @@ fun RecentlyAddedCard(
             .width(140.dp)
             .clickable(
                 interactionSource = interactionSource,
-                indication = ripple(color = Color(0xFFC70025)),
+                indication = null,
                 onClick = onClick
             )
     ) {
@@ -109,13 +110,13 @@ fun RecentlyAddedCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .clip(RoundedCornerShape(20.dp)),
+                .clip(RoundedCornerShape(20.dp))
+                .indication(interactionSource, ripple(color = Color(0xFFC70025))),
             contentScale = ContentScale.Crop,
             error = painterResource(id = R.drawable.ic_unknown_artist),
             placeholder = painterResource(id = R.drawable.ic_unknown_artist),
             fallback = painterResource(id = R.drawable.ic_unknown_artist)
         )
-
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(

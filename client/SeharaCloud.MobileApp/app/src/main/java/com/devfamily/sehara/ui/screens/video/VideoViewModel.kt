@@ -38,7 +38,11 @@ class VideoViewModel : ViewModel() {
             _isLoading.value = true
             try {
                 _videoList.value = RetrofitClient.instance.getVideos()
-                _recentList.value = RetrofitClient.instance.getRecentVideos()
+                _recentList.value = try {
+                    RetrofitClient.instance.getRecentVideos()
+                } catch (e: Exception) {
+                    emptyList()
+                }
                 _error.value = null
             } catch (e: Exception) {
                 _error.value = e.toUserMessage()

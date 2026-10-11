@@ -1,6 +1,7 @@
 package com.devfamily.sehara.ui.screens.music
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,8 +10,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,21 +34,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.devfamily.sehara.R
 import com.devfamily.sehara.ui.components.AllTracksSection
 import com.devfamily.sehara.ui.components.MusicPlayerOverlay
 import kotlinx.coroutines.delay
-
+import androidx.compose.foundation.interaction.MutableInteractionSource
 @Composable
 fun MusicListScreen(
     filter: MusicFilter,
     onBackClick: () -> Unit = {},
+    onArtistClick: () -> Unit = {},
+    onGenreClick: () -> Unit = {},
     viewModel: MusicListViewModel = viewModel(),
     playerViewModel: MusicPlayerViewModel
 ) {
@@ -55,11 +65,19 @@ fun MusicListScreen(
     val hasActiveSong = currentSong.id.isNotEmpty()
     var playerExpanded by remember { mutableStateOf(false) }
     var backEnabled by remember { mutableStateOf(true) }
+    var isMenuOpen by remember { mutableStateOf(false) }
+
+    val blurRadius by animateDpAsState(
+        targetValue = if (isMenuOpen) 16.dp else 0.dp,
+        label = "menu_blur"
+    )
 
     val artistName = when (filter) {
         is MusicFilter.ByGenre -> filter.name
         is MusicFilter.ByArtist -> filter.name
     }
+
+    val cameFromArtist = filter is MusicFilter.ByArtist
 
     LaunchedEffect(filter) {
         viewModel.load(filter)
@@ -81,6 +99,7 @@ fun MusicListScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .blur(blurRadius)
                 .background(Color(0xFF201F1F))
         ) {
             Row(
@@ -123,7 +142,9 @@ fun MusicListScreen(
                 Image(
                     painter = painterResource(id = R.drawable.ic_meni),
                     contentDescription = null,
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clickable { isMenuOpen = true },
                     colorFilter = ColorFilter.tint(Color.White)
                 )
             }
@@ -172,7 +193,9 @@ fun MusicListScreen(
                         },
                         modifier = Modifier
                             .fillMaxSize(),
-                        bottomContentPadding = if (hasActiveSong) 100.dp else 0.dp,
+                        bottomContentPadding = if (hasActiveSong) {
+                            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 132.dp
+                        } else 40.dp,
                         currentSongId = currentSong.id,
                         isPlaying = isPlaying
                     )
@@ -180,8 +203,94 @@ fun MusicListScreen(
             }
         }
 
+        if (isMenuOpen) {
+            Dialog(
+                onDismissRequest = { isMenuOpen = false },
+                properties = DialogProperties(usePlatformDefaultWidth = false)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { isMenuOpen = false }
+                        .statusBarsPadding()
+                        .padding(top = 16.dp),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(width = 300.dp, height = 150.dp)
+                            .background(
+                                color = Color.Black,
+                                shape = RoundedCornerShape(30.dp)
+                            )
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { }
+                            .padding(20.dp)
+                    ) {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Browse music by:",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = Color.White
+                                )
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_close),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clickable { isMenuOpen = false },
+                                    colorFilter = ColorFilter.tint(Color(0xFFB0B0B0))
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        isMenuOpen = false
+                                        if (cameFromArtist) onGenreClick() else onArtistClick()
+                                    }
+                                    .padding(vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Image(
+                                    painter = painterResource(
+                                        id = if (cameFromArtist) R.drawable.ic_genre else R.drawable.ic_artist
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = if (cameFromArtist) "Genres" else "Artists",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if (hasActiveSong) {
-            Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .blur(blurRadius)
+            ) {
                 MusicPlayerOverlay(
                     viewModel = playerViewModel,
                     isExpanded = playerExpanded,

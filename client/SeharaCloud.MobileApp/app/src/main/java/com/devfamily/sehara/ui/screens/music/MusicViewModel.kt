@@ -18,6 +18,9 @@ class MusicViewModel : ViewModel() {
     private val _musicList = MutableStateFlow<List<SongItem>>(emptyList())
     val musicList: StateFlow<List<SongItem>> = _musicList
 
+    private val _recentList = MutableStateFlow<List<SongItem>>(emptyList())
+    val recentList: StateFlow<List<SongItem>> = _recentList.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
@@ -56,6 +59,11 @@ class MusicViewModel : ViewModel() {
             _isLoading.value = true
             try {
                 _musicList.value = RetrofitClient.instance.getMusic()
+                _recentList.value = try {
+                    RetrofitClient.instance.getRecentMusic()
+                } catch (e: Exception) {
+                    emptyList()
+                }
                 _error.value = null
             } catch (e: Exception) {
                 _error.value = e.toUserMessage()

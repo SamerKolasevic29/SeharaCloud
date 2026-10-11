@@ -77,7 +77,7 @@ import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
-
+import androidx.compose.foundation.interaction.MutableInteractionSource
 @Composable
 fun MusicHomeScreen(
     modifier: Modifier = Modifier,
@@ -105,7 +105,7 @@ fun MusicHomeScreen(
         label = "menu_blur"
     )
 
-    val recentList = musicList.take(20)
+    val recentList by viewModel.recentList.collectAsState()
     var backEnabled by remember { mutableStateOf(true) }
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -336,9 +336,7 @@ fun MusicHomeScreen(
                                         }
                                         else -> {
                                             MusicListScrollable(
-                                                items = searchResults,
-                                                currentSongId = currentSong.id,
-                                                isPlaying = isPlaying
+                                                items = searchResults
                                             ) { item ->
                                                 val isFirstSong = !hasActiveSong
                                                 playerViewModel.loadSong(
@@ -399,6 +397,10 @@ fun MusicHomeScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) { isMenuOpen = false }
                                 .statusBarsPadding()
                                 .padding(top = 16.dp),
                             contentAlignment = Alignment.TopCenter
@@ -410,6 +412,10 @@ fun MusicHomeScreen(
                                         color = Color.Black,
                                         shape = RoundedCornerShape(30.dp)
                                     )
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) { }
                                     .padding(20.dp)
                             ) {
                                 Column(modifier = Modifier.fillMaxSize()) {

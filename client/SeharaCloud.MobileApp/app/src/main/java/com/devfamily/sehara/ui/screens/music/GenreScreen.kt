@@ -66,7 +66,6 @@ fun GenreScreen(
     viewModel: GenreViewModel = viewModel(),
     playerViewModel: MusicPlayerViewModel
 ) {
-    var showSplash by rememberSaveable { mutableStateOf(showInitialSplash) }
     val genres by viewModel.genres.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -77,54 +76,20 @@ fun GenreScreen(
     var backEnabled by remember { mutableStateOf(true) }
 
     LaunchedEffect(playerExpanded) {
-        if (!playerExpanded) {
+        if (!playerExpanded && hasActiveSong) {
             backEnabled = false
-            delay(2000)
+            delay(400)
             backEnabled = true
         }
     }
 
-    LaunchedEffect(Unit) {
-        if (showInitialSplash) {
-            delay(300)
-            showSplash = false
-        } else {
-            showSplash = false
-        }
-    }
 
     BackHandler(enabled = playerExpanded) {
         playerExpanded = false
     }
 
-    AnimatedContent(
-        targetState = showSplash,
-        transitionSpec = { fadeIn() togetherWith fadeOut() },
-        label = "genre_splash_transition"
-    ) { isSplash ->
-        if (isSplash) {
-            Box(
-                modifier = modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .navigationBarsPadding()
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.music_genre_splash_bg),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-                Text(
-                    text = "Genre",
-                    style = MaterialTheme.typography.displayLarge,
-                    color = Color.White,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 48.dp)
-                )
-            }
-        } else {
+    run {
+        run {
             Box(modifier = modifier.fillMaxSize()) {
                 Column(
                     modifier = Modifier

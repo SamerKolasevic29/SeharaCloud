@@ -194,6 +194,10 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         _hasNext.value = currentQueueIndex < queue.size - 1
     }
 
+    fun thumbnailAt(offset: Int): String? {
+        return queue.getOrNull(currentQueueIndex + offset)?.thumbnailUrl
+    }
+
     fun skipNext() {
         controller?.seekToNext()
     }

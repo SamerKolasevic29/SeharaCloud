@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -43,7 +44,9 @@ fun AllTracksSection(
     onItemClick: (SongItem) -> Unit,
     modifier: Modifier = Modifier,
     title: String = "All tracks",
-    bottomContentPadding: Dp = 0.dp
+    bottomContentPadding: Dp = 0.dp,
+    currentSongId: String = "",
+    isPlaying: Boolean = false
 ) {
     Column(
         modifier = modifier.fillMaxWidth()
@@ -75,6 +78,8 @@ fun AllTracksSection(
                     AllTracksRow(
                         item = item,
                         showDivider = index < items.lastIndex,
+                        isCurrent = item.id == currentSongId,
+                        isPlaying = isPlaying,
                         onClick = { onItemClick(item) }
                     )
                 }
@@ -87,6 +92,8 @@ fun AllTracksSection(
 fun AllTracksRow(
     item: SongItem,
     showDivider: Boolean,
+    isCurrent: Boolean = false,
+    isPlaying: Boolean = false,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -97,6 +104,9 @@ fun AllTracksRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (isCurrent) Color(0x33C70025) else Color.Transparent)
             .clickable(
                 interactionSource = interactionSource,
                 indication = ripple(color = Color(0xFFC70025)),
@@ -130,8 +140,11 @@ fun AllTracksRow(
             ) {
                 Text(
                     text = item.title ?: item.filename,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
-                    color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 14.sp,
+                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal
+                    ),
+                    color = if (isCurrent) Color(0xFFFF3054) else Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -145,6 +158,11 @@ fun AllTracksRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+            }
+
+            if (isCurrent) {
+                Spacer(modifier = Modifier.width(12.dp))
+                EqualizerBars(isPlaying = isPlaying)
             }
         }
 

@@ -51,6 +51,7 @@ fun MusicListScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val currentSong by playerViewModel.currentSong.collectAsState()
+    val isPlaying by playerViewModel.isPlaying.collectAsState()
     val hasActiveSong = currentSong.id.isNotEmpty()
     var playerExpanded by remember { mutableStateOf(false) }
     var backEnabled by remember { mutableStateOf(true) }
@@ -65,9 +66,9 @@ fun MusicListScreen(
     }
 
     LaunchedEffect(playerExpanded) {
-        if (!playerExpanded) {
+        if (!playerExpanded && hasActiveSong) {
             backEnabled = false
-            delay(2000)
+            delay(400)
             backEnabled = true
         }
     }
@@ -171,7 +172,9 @@ fun MusicListScreen(
                         },
                         modifier = Modifier
                             .fillMaxSize(),
-                        bottomContentPadding = if (hasActiveSong) 100.dp else 0.dp
+                        bottomContentPadding = if (hasActiveSong) 100.dp else 0.dp,
+                        currentSongId = currentSong.id,
+                        isPlaying = isPlaying
                     )
                 }
             }

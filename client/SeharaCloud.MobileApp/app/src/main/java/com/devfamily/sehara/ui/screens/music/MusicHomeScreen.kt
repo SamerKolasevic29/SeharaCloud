@@ -3,6 +3,7 @@ package com.devfamily.sehara.ui.screens.music
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -42,6 +43,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.TransformOrigin
@@ -92,7 +94,13 @@ fun MusicHomeScreen(
     var isMenuOpen by remember { mutableStateOf(false) }
 
     val currentSong by playerViewModel.currentSong.collectAsState()
+    val isPlaying by playerViewModel.isPlaying.collectAsState()
     val hasActiveSong = currentSong.id.isNotEmpty()
+
+    val blurRadius by animateDpAsState(
+        targetValue = if (isMenuOpen) 16.dp else 0.dp,
+        label = "menu_blur"
+    )
 
     val recentList = musicList.take(20)
     var backEnabled by remember { mutableStateOf(true) }
@@ -126,9 +134,9 @@ fun MusicHomeScreen(
     }
 
     LaunchedEffect(playerExpanded) {
-        if (!playerExpanded) {
+        if (!playerExpanded && hasActiveSong) {
             backEnabled = false
-            delay(2000)
+            delay(400)
             backEnabled = true
         }
     }
@@ -186,8 +194,8 @@ fun MusicHomeScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .blur(blurRadius)
                         .background(Color(0xFF201F1F))
-
                 ) {
                     Row(
                         modifier = Modifier
@@ -324,7 +332,11 @@ fun MusicHomeScreen(
                                             }
                                         }
                                         else -> {
-                                            MusicListScrollable(items = searchResults) { item ->
+                                            MusicListScrollable(
+                                                items = searchResults,
+                                                currentSongId = currentSong.id,
+                                                isPlaying = isPlaying
+                                            ) { item ->
                                                 val isFirstSong = !hasActiveSong
                                                 playerViewModel.loadSong(
                                                     item.id,
@@ -366,7 +378,9 @@ fun MusicHomeScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f),
-                                bottomContentPadding = if (hasActiveSong) 100.dp else 0.dp
+                                bottomContentPadding = if (hasActiveSong) 100.dp else 0.dp,
+                                currentSongId = currentSong.id,
+                                isPlaying = isPlaying
                             )
                         }
                     }
@@ -477,7 +491,7 @@ fun MusicHomeScreen(
                 }
 
                 if (hasActiveSong) {
-                    Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+                    Box(modifier = Modifier.align(Alignment.BottomCenter).blur(blurRadius)) {
                         MusicPlayerOverlay(
                             viewModel = playerViewModel,
                             isExpanded = playerExpanded,

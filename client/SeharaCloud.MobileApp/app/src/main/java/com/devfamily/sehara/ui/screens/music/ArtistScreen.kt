@@ -70,7 +70,6 @@ fun ArtistScreen(
     viewModel: ArtistViewModel = viewModel(),
     playerViewModel: MusicPlayerViewModel
 ) {
-    var showSplash by rememberSaveable { mutableStateOf(showInitialSplash) }
     var searchQuery by remember { mutableStateOf("") }
     val searchResults by viewModel.searchResults.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
@@ -83,19 +82,10 @@ fun ArtistScreen(
     var backEnabled by remember { mutableStateOf(true) }
 
     LaunchedEffect(playerExpanded) {
-        if (!playerExpanded) {
+        if (!playerExpanded && hasActiveSong) {
             backEnabled = false
-            delay(1000)
+            delay(400)
             backEnabled = true
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        if (showInitialSplash) {
-            delay(800)
-            showSplash = false
-        } else {
-            showSplash = false
         }
     }
 
@@ -112,35 +102,8 @@ fun ArtistScreen(
         playerExpanded = false
     }
 
-    AnimatedContent(
-        targetState = showSplash,
-        transitionSpec = { fadeIn() togetherWith fadeOut() },
-        label = "artist_splash_transition"
-    ) { isSplash ->
-        if (isSplash) {
-            Box(
-                modifier = modifier
-                    .fillMaxSize()
-                    .background(Color.Black)
-                    .statusBarsPadding()
-                    .navigationBarsPadding()
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.music_artist_card),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-                Text(
-                    text = "Artist",
-                    style = MaterialTheme.typography.displayLarge,
-                    color = Color.White,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 48.dp)
-                )
-            }
-        } else {
+    run {
+        run {
             Box(modifier = modifier.fillMaxSize()) {
                 Column(
                     modifier = Modifier

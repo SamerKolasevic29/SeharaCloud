@@ -12,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,11 +43,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -53,6 +65,7 @@ import com.devfamily.sehara.R
 import com.devfamily.sehara.data.DocumentItem
 import com.devfamily.sehara.ui.components.SearchBar
 import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
 
 @Composable
 private fun DocRow(
@@ -120,10 +133,38 @@ fun DocumentsScreen(
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val keyboardController = LocalSoftwareKeyboardController.current
 
+    var collapseOffset by remember { mutableFloatStateOf(0f) }
+    var topHeightPx by remember { mutableIntStateOf(0) }
+
+    val collapseConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (searchQuery.isNotBlank() || available.y >= 0f) return Offset.Zero
+                val newOffset = (collapseOffset + available.y).coerceIn(-topHeightPx.toFloat(), 0f)
+                val consumedY = newOffset - collapseOffset
+                collapseOffset = newOffset
+                return Offset(0f, consumedY)
+            }
+
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource
+            ): Offset {
+                if (searchQuery.isNotBlank() || available.y <= 0f) return Offset.Zero
+                val newOffset = (collapseOffset + available.y).coerceIn(-topHeightPx.toFloat(), 0f)
+                val consumedY = newOffset - collapseOffset
+                collapseOffset = newOffset
+                return Offset(0f, consumedY)
+            }
+        }
+    }
+
     LaunchedEffect(searchQuery) {
         if (searchQuery.isBlank()) {
             viewModel.clearSearch()
         } else {
+            collapseOffset = 0f
             delay(300)
             viewModel.searchDocuments(searchQuery)
         }
@@ -178,21 +219,46 @@ fun DocumentsScreen(
                 Spacer(modifier = Modifier.size(28.dp))
             }
 
-            LazyColumn(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
+                    .fillMaxSize()
+                    .nestedScroll(collapseConnection),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clipToBounds()
+                        .layout { measurable, constraints ->
+                            val placeable = measurable.measure(
+                                constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity)
+                            )
+                            val offset = collapseOffset.coerceIn(-placeable.height.toFloat(), 0f)
+                            val visibleHeight = (placeable.height + offset).roundToInt().coerceAtLeast(0)
+                            layout(placeable.width, visibleHeight) {
+                                placeable.place(0, offset.roundToInt())
+                            }
+                        }
+                        .graphicsLayer {
+                            val progress = if (topHeightPx > 0) {
+                                (-collapseOffset / topHeightPx).coerceIn(0f, 1f)
+                            } else 0f
+                            alpha = (1f - progress * 1.4f).coerceIn(0f, 1f)
+                            val s = 1f - 0.12f * progress
+                            scaleX = s
+                            scaleY = s
+                            transformOrigin = TransformOrigin(0.5f, 0f)
+                        }
+                        .onSizeChanged { topHeightPx = it.height },
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Spacer(modifier = Modifier.height(16.dp))
+
                     SearchBar(
                         query = searchQuery,
                         onQueryChange = { searchQuery = it }
                     )
-                }
 
-                item {
                     AnimatedVisibility(
                         visible = searchQuery.isNotBlank(),
                         enter = fadeIn() + expandVertically(),
@@ -253,10 +319,9 @@ fun DocumentsScreen(
                             }
                         }
                     }
-                }
 
-                item {
                     Spacer(modifier = Modifier.height(24.dp))
+
                     Row(
                         modifier = Modifier.width(332.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -308,94 +373,103 @@ fun DocumentsScreen(
                             )
                         }
                     }
+
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                when {
-                    isLoading -> {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .width(332.dp)
-                                    .height(100.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(color = Color(0xFFC70025))
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentPadding = PaddingValues(top = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    when {
+                        isLoading -> {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .width(332.dp)
+                                        .height(100.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(color = Color(0xFFC70025))
+                                }
                             }
                         }
-                    }
-                    error != null -> {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .width(332.dp)
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "Error: $error",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = Color(0xFF8E8D8D)
-                                )
-                            }
-                        }
-                    }
-                    currentList.isEmpty() -> {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .width(332.dp)
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = if (selectedTab == 0) "No recent documents" else "No documents found",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = Color(0xFF8E8D8D)
-                                )
-                            }
-                        }
-                    }
-                    else -> {
-                        itemsIndexed(
-                            items = currentList,
-                            key = { index, doc -> "${selectedTab}_${doc.id}_$index" }
-                        ) { index, doc ->
-                            val first = index == 0
-                            val last = index == currentList.lastIndex
-                            Box(
-                                modifier = Modifier
-                                    .width(332.dp)
-                                    .background(
-                                        color = Color.Black,
-                                        shape = RoundedCornerShape(
-                                            topStart = if (first) 24.dp else 0.dp,
-                                            topEnd = if (first) 24.dp else 0.dp,
-                                            bottomStart = if (last) 24.dp else 0.dp,
-                                            bottomEnd = if (last) 24.dp else 0.dp
-                                        )
+                        error != null -> {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .width(332.dp)
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "Error: $error",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color(0xFF8E8D8D)
                                     )
-                                    .clip(
-                                        RoundedCornerShape(
-                                            topStart = if (first) 24.dp else 0.dp,
-                                            topEnd = if (first) 24.dp else 0.dp,
-                                            bottomStart = if (last) 24.dp else 0.dp,
-                                            bottomEnd = if (last) 24.dp else 0.dp
-                                        )
+                                }
+                            }
+                        }
+                        currentList.isEmpty() -> {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .width(332.dp)
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = if (selectedTab == 0) "No recent documents" else "No documents found",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color(0xFF8E8D8D)
                                     )
-                            ) {
-                                DocRow(
-                                    item = doc,
-                                    showDivider = !last,
-                                    onClick = { onDocumentClick(doc) }
-                                )
+                                }
+                            }
+                        }
+                        else -> {
+                            itemsIndexed(
+                                items = currentList,
+                                key = { index, doc -> "${selectedTab}_${doc.id}_$index" }
+                            ) { index, doc ->
+                                val first = index == 0
+                                val last = index == currentList.lastIndex
+                                Box(
+                                    modifier = Modifier
+                                        .width(332.dp)
+                                        .background(
+                                            color = Color.Black,
+                                            shape = RoundedCornerShape(
+                                                topStart = if (first) 24.dp else 0.dp,
+                                                topEnd = if (first) 24.dp else 0.dp,
+                                                bottomStart = if (last) 24.dp else 0.dp,
+                                                bottomEnd = if (last) 24.dp else 0.dp
+                                            )
+                                        )
+                                        .clip(
+                                            RoundedCornerShape(
+                                                topStart = if (first) 24.dp else 0.dp,
+                                                topEnd = if (first) 24.dp else 0.dp,
+                                                bottomStart = if (last) 24.dp else 0.dp,
+                                                bottomEnd = if (last) 24.dp else 0.dp
+                                            )
+                                        )
+                                ) {
+                                    DocRow(
+                                        item = doc,
+                                        showDivider = !last,
+                                        onClick = { onDocumentClick(doc) }
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
+                    item {
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
                 }
             }
         }

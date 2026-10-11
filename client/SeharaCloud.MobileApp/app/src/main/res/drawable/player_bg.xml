@@ -1,0 +1,37 @@
+<!--
+  ~ Copyright (C) 2026 The Android Open Source Project
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="1035dp"
+    android:height="2250dp"
+    android:viewportWidth="1035"
+    android:viewportHeight="2250">
+  <path
+      android:pathData="M0,0h1035v2250h-1035z">
+    <aapt:attr name="android:fillColor">
+      <gradient
+          android:startX="-95.3"
+          android:startY="-242"
+          android:endX="975.6"
+          android:endY="2508.8"
+          android:type="linear">
+        <item android:offset="0.6" android:color="#FF0F0F0F"/>
+        <item android:offset="0.8" android:color="#F3500816"/>
+        <item android:offset="1" android:color="#E59F001E"/>
+      </gradient>
+    </aapt:attr>
+  </path>
+</vector>

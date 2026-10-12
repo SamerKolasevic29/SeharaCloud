@@ -16,6 +16,10 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.devfamily.sehara.R
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 
 @Composable
 fun SearchBar(
@@ -24,6 +28,9 @@ fun SearchBar(
     onQueryChange: (String) -> Unit,
     placeholder: String = "Search"
 ) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     BasicTextField(
         value = query,
         onValueChange = onQueryChange,
@@ -55,7 +62,7 @@ fun SearchBar(
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Box {
+                Box(modifier = Modifier.weight(1f)) {
                     if (query.isEmpty()) {
                         Text(
                             text = placeholder,
@@ -64,6 +71,21 @@ fun SearchBar(
                         )
                     }
                     innerTextField()
+                }
+                if (query.isNotEmpty()) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_close),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clickable {
+                                onQueryChange("")
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                            },
+                        colorFilter = ColorFilter.tint(Color(0xFFB0B0B0))
+                    )
                 }
             }
         }

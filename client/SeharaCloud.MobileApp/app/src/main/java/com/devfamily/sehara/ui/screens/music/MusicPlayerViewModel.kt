@@ -47,6 +47,11 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
     private val _hasNext = MutableStateFlow(false)
     val hasNextFlow: StateFlow<Boolean> = _hasNext.asStateFlow()
 
+    private val _isShuffled = MutableStateFlow(false)
+    val isShuffled: StateFlow<Boolean> = _isShuffled.asStateFlow()
+
+    private var originalQueue: List<SongItem> = emptyList()
+
     private val _openArtist = MutableSharedFlow<Pair<String, String>>(extraBufferCapacity = 1)
     val openArtist: SharedFlow<Pair<String, String>> = _openArtist.asSharedFlow()
 
@@ -131,6 +136,8 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         if (_currentSong.value.id == songId && player.playbackState != Player.STATE_IDLE) return
 
         queue = emptyList()
+        originalQueue = emptyList()
+        _isShuffled.value = false
         currentQueueIndex = -1
         _hasPrevious.value = false
         _hasNext.value = false
@@ -165,6 +172,58 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         _isPlaying.value = true
     }
 
+    private fun buildMediaItem(song: SongItem, baseUrl: String): MediaItem {
+        val metadata = MediaMetadata.Builder()
+            .setTitle(song.title ?: song.filename)
+            .setArtist(song.artist ?: "Unknown Artist")
+            .setArtworkUri(song.thumbnailUrl?.let { android.net.Uri.parse(it) })
+            .build()
+
+        return MediaItem.Builder()
+            .setUri("$baseUrl/api/music/${song.id}/stream")
+            .setMediaMetadata(metadata)
+            .build()
+    }
+
+    fun loadSongFromSearch(item: SongItem) {
+        loadSong(
+            item.id,
+            item.title ?: item.filename,
+            item.artist ?: "Unknown Artist",
+            (item.durationSec ?: 0) * 1000L,
+            item.thumbnailUrl,
+            item.genre
+        )
+
+        val genreName = item.genre
+        if (genreName.isNullOrBlank()) return
+
+        viewModelScope.launch {
+            try {
+                val genre = RetrofitClient.instance.getGenres()
+                    .firstOrNull { it.name.equals(genreName, ignoreCase = true) } ?: return@launch
+                val list = RetrofitClient.instance.getMusicByGenre(genre.id)
+                val index = list.indexOfFirst { it.id == item.id }
+                val player = controller ?: return@launch
+
+                if (index < 0 || queue.isNotEmpty() || _currentSong.value.id != item.id) return@launch
+
+                val baseUrl = RetrofitClient.BASE_URL.removeSuffix("/")
+                val before = list.subList(0, index).map { buildMediaItem(it, baseUrl) }
+                val after = list.subList(index + 1, list.size).map { buildMediaItem(it, baseUrl) }
+
+                if (after.isNotEmpty()) player.addMediaItems(after)
+                if (before.isNotEmpty()) player.addMediaItems(0, before)
+
+                queue = list
+                currentQueueIndex = index
+                _hasPrevious.value = index > 0
+                _hasNext.value = index < list.size - 1
+            } catch (e: Exception) {
+            }
+        }
+    }
+
     fun loadSongFromQueue(item: SongItem, queueList: List<SongItem>) {
         val player = controller
         if (player == null) {
@@ -173,22 +232,13 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         }
 
         queue = queueList
+        originalQueue = emptyList()
+        _isShuffled.value = false
         currentQueueIndex = queueList.indexOfFirst { it.id == item.id }
 
         val baseUrl = RetrofitClient.BASE_URL.removeSuffix("/")
 
-        val mediaItems = queueList.map { song ->
-            val metadata = MediaMetadata.Builder()
-                .setTitle(song.title ?: song.filename)
-                .setArtist(song.artist ?: "Unknown Artist")
-                .setArtworkUri(song.thumbnailUrl?.let { android.net.Uri.parse(it) })
-                .build()
-
-            MediaItem.Builder()
-                .setUri("$baseUrl/api/music/${song.id}/stream")
-                .setMediaMetadata(metadata)
-                .build()
-        }
+        val mediaItems = queueList.map { song -> buildMediaItem(song, baseUrl) }
 
         player.setMediaItems(mediaItems, currentQueueIndex, 0L)
         player.prepare()
@@ -232,6 +282,48 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
+    fun toggleShuffle() {
+        val player = controller ?: return
+        if (queue.isEmpty() || currentQueueIndex !in queue.indices) return
+
+        val current = queue[currentQueueIndex]
+        val newQueue: List<SongItem>
+
+        if (!_isShuffled.value) {
+            originalQueue = queue
+            newQueue = listOf(current) + queue
+                .filterIndexed { i, _ -> i != currentQueueIndex }
+                .shuffled()
+            _isShuffled.value = true
+        } else {
+            newQueue = originalQueue.ifEmpty { queue }
+            _isShuffled.value = false
+        }
+
+        val newIndex = newQueue.indexOfFirst { it.id == current.id }.coerceAtLeast(0)
+        val baseUrl = RetrofitClient.BASE_URL.removeSuffix("/")
+
+        queue = newQueue
+        currentQueueIndex = newIndex
+
+        val playerIndex = player.currentMediaItemIndex
+        if (playerIndex < player.mediaItemCount - 1) {
+            player.removeMediaItems(playerIndex + 1, player.mediaItemCount)
+        }
+        if (playerIndex > 0) {
+            player.removeMediaItems(0, playerIndex)
+        }
+
+        val after = newQueue.subList(newIndex + 1, newQueue.size).map { buildMediaItem(it, baseUrl) }
+        val before = newQueue.subList(0, newIndex).map { buildMediaItem(it, baseUrl) }
+
+        if (after.isNotEmpty()) player.addMediaItems(after)
+        if (before.isNotEmpty()) player.addMediaItems(0, before)
+
+        _hasPrevious.value = newIndex > 0
+        _hasNext.value = newIndex < newQueue.size - 1
+    }
+
     fun thumbnailAt(offset: Int): String? {
         return queue.getOrNull(currentQueueIndex + offset)?.thumbnailUrl
     }
@@ -251,6 +343,8 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         _currentPosition.value = 0L
         _isPlaying.value = false
         queue = emptyList()
+        originalQueue = emptyList()
+        _isShuffled.value = false
         currentQueueIndex = -1
     }
 

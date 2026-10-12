@@ -78,6 +78,14 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.animation.core.animate
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import android.app.Activity
+import android.content.pm.ActivityInfo
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalContext
 @Composable
 fun MusicHomeScreen(
     modifier: Modifier = Modifier,
@@ -111,7 +119,33 @@ fun MusicHomeScreen(
 
     var collapseOffset by remember { mutableFloatStateOf(0f) }
     var topHeightPx by remember { mutableIntStateOf(0) }
+    val tracksListState = rememberLazyListState()
+    val uiScope = rememberCoroutineScope()
+    val orientationContext = LocalContext.current
 
+    DisposableEffect(Unit) {
+        val activity = orientationContext as? Activity
+        val previous = activity?.requestedOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        onDispose {
+            activity?.requestedOrientation = previous
+        }
+    }
+    var sortAscending by rememberSaveable { mutableStateOf(true) }
+    var sortByArtist by rememberSaveable { mutableStateOf(false) }
+    val sortedMusicList = remember(musicList, sortAscending, sortByArtist) {
+        val collator = java.text.Collator.getInstance(java.util.Locale("bs")).apply {
+            strength = java.text.Collator.TERTIARY
+        }
+        val textComparator = Comparator<String> { a, b -> collator.compare(a, b) }
+        val comparator = if (sortByArtist) {
+            compareBy<com.devfamily.sehara.data.SongItem, String>(textComparator) { it.artist ?: "" }
+                .thenBy(textComparator) { it.title ?: it.filename }
+        } else {
+            compareBy<com.devfamily.sehara.data.SongItem, String>(textComparator) { it.title ?: it.filename }
+        }
+        musicList.sortedWith(if (sortAscending) comparator else comparator.reversed())
+    }
     val collapseConnection = remember {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
@@ -290,7 +324,7 @@ fun MusicHomeScreen(
                             )
 
                             AnimatedVisibility(
-                                visible = searchQuery.isNotBlank(),
+                                visible = searchQuery.trim().length >= 2,
                                 enter = fadeIn() + expandVertically(),
                                 exit = fadeOut() + shrinkVertically()
                             ) {
@@ -339,12 +373,7 @@ fun MusicHomeScreen(
                                                 items = searchResults
                                             ) { item ->
                                                 val isFirstSong = !hasActiveSong
-                                                playerViewModel.loadSong(
-                                                    item.id,
-                                                    item.title ?: item.filename,
-                                                    item.artist ?: "Unknown Artist",
-                                                    (item.durationSec ?: 0) * 1000L
-                                                )
+                                                playerViewModel.loadSongFromSearch(item)
                                                 keyboardController?.hide()
                                                 if (isFirstSong) playerExpanded = true
                                             }
@@ -365,16 +394,26 @@ fun MusicHomeScreen(
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(20.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
 
                         if (musicList.isNotEmpty()) {
                             AllTracksSection(
-                                items = musicList,
+                                items = sortedMusicList,
                                 onItemClick = { item ->
                                     val isFirstSong = !hasActiveSong
-                                    playerViewModel.loadSongFromQueue(item, musicList)
+                                    playerViewModel.loadSongFromQueue(item, sortedMusicList)
                                     if (isFirstSong) playerExpanded = true
+                                },
+                                ascending = sortAscending,
+                                sortByArtist = sortByArtist,
+                                onToggleOrder = {
+                                    sortAscending = !sortAscending
+                                    uiScope.launch { tracksListState.scrollToItem(0) }
+                                },
+                                onToggleSortBy = {
+                                    sortByArtist = !sortByArtist
+                                    uiScope.launch { tracksListState.scrollToItem(0) }
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -383,7 +422,16 @@ fun MusicHomeScreen(
                                     WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 132.dp
                                 } else 40.dp,
                                 currentSongId = currentSong.id,
-                                isPlaying = isPlaying
+                                isPlaying = isPlaying,
+                                listState = tracksListState,
+                                onHeaderSwipeDown = {
+                                    uiScope.launch {
+                                        animate(
+                                            initialValue = collapseOffset,
+                                            targetValue = 0f
+                                        ) { value, _ -> collapseOffset = value }
+                                    }
+                                }
                             )
                         }
                     }

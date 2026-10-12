@@ -426,7 +426,6 @@ fun MusicHomeScreen(
                                 listState = tracksListState,
                                 onHeaderSwipeDown = {
                                     uiScope.launch {
-                                        launch { tracksListState.animateScrollToItem(0) }
                                         animate(
                                             initialValue = collapseOffset,
                                             targetValue = 0f

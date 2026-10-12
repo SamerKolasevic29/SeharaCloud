@@ -47,7 +47,11 @@ import com.devfamily.sehara.R
 import com.devfamily.sehara.ui.components.AllTracksSection
 import com.devfamily.sehara.ui.components.MusicPlayerOverlay
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 @Composable
 fun MusicListScreen(
     filter: MusicFilter,
@@ -79,6 +83,23 @@ fun MusicListScreen(
 
     val cameFromArtist = filter is MusicFilter.ByArtist
 
+    var sortAscending by rememberSaveable { mutableStateOf(true) }
+    var sortByArtist by rememberSaveable { mutableStateOf(false) }
+    val tracksListState = rememberLazyListState()
+    val uiScope = rememberCoroutineScope()
+    val sortedSongs = remember(songs, sortAscending, sortByArtist) {
+        val collator = java.text.Collator.getInstance(java.util.Locale("bs")).apply {
+            strength = java.text.Collator.TERTIARY
+        }
+        val textComparator = Comparator<String> { a, b -> collator.compare(a, b) }
+        val comparator = if (sortByArtist) {
+            compareBy<com.devfamily.sehara.data.SongItem, String>(textComparator) { it.artist ?: "" }
+                .thenBy(textComparator) { it.title ?: it.filename }
+        } else {
+            compareBy<com.devfamily.sehara.data.SongItem, String>(textComparator) { it.title ?: it.filename }
+        }
+        songs.sortedWith(if (sortAscending) comparator else comparator.reversed())
+    }
     LaunchedEffect(filter) {
         viewModel.load(filter)
     }
@@ -185,11 +206,23 @@ fun MusicListScreen(
                 else -> {
                     AllTracksSection(
                         title = "$artistName's tracks:",
-                        items = songs,
+                        items = sortedSongs,
                         onItemClick = { song ->
                             val isFirstSong = !hasActiveSong
-                            playerViewModel.loadSongFromQueue(song, songs)
+                            playerViewModel.loadSongFromQueue(song, sortedSongs)
                             if (isFirstSong) playerExpanded = true
+                        },
+                        ascending = sortAscending,
+                        sortByArtist = sortByArtist,
+                        onToggleOrder = {
+                            sortAscending = !sortAscending
+                            uiScope.launch { tracksListState.scrollToItem(0) }
+                        },
+                        onToggleSortBy = if (cameFromArtist) null else {
+                            {
+                                sortByArtist = !sortByArtist
+                                uiScope.launch { tracksListState.scrollToItem(0) }
+                            }
                         },
                         modifier = Modifier
                             .fillMaxSize(),
@@ -197,7 +230,8 @@ fun MusicListScreen(
                             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 132.dp
                         } else 40.dp,
                         currentSongId = currentSong.id,
-                        isPlaying = isPlaying
+                        isPlaying = isPlaying,
+                        listState = tracksListState
                     )
                 }
             }

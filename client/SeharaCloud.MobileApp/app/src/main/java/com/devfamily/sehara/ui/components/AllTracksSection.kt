@@ -89,7 +89,7 @@ fun AllTracksSection(
                 style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
                 color = Color.White
             )
-            if (onToggleOrder != null && onToggleSortBy != null) {
+            if (onToggleOrder != null) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "(${items.size})",
@@ -107,17 +107,19 @@ fun AllTracksSection(
                         .clickable { onToggleOrder() },
                     colorFilter = ColorFilter.tint(Color.White)
                 )
-                Spacer(modifier = Modifier.width(16.dp))
-                Image(
-                    painter = painterResource(
-                        id = if (sortByArtist) R.drawable.ic_artist else R.drawable.ic_music
-                    ),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(22.dp)
-                        .clickable { onToggleSortBy() },
-                    colorFilter = ColorFilter.tint(Color.White)
-                )
+                if (onToggleSortBy != null) {
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Image(
+                        painter = painterResource(
+                            id = if (sortByArtist) R.drawable.ic_artist else R.drawable.ic_music
+                        ),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(22.dp)
+                            .clickable { onToggleSortBy() },
+                        colorFilter = ColorFilter.tint(Color.White)
+                    )
+                }
             }
         }
 

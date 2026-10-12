@@ -95,6 +95,7 @@ fun MusicPlayerOverlay(
     val hasDuration = song.durationMs > 0L
     val hasPrevious by viewModel.hasPreviousFlow.collectAsState()
     val hasNext by viewModel.hasNextFlow.collectAsState()
+    val isShuffled by viewModel.isShuffled.collectAsState()
 
     val accentColor = Color(0xFFFF3054)
 
@@ -125,7 +126,7 @@ fun MusicPlayerOverlay(
         initialValue = 0.2f,
         targetValue = 0.8f,
         animationSpec = infiniteRepeatable(
-            animation = tween(11000, easing = FastOutSlowInEasing),
+            animation = tween(5500, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "glowX"
@@ -134,7 +135,7 @@ fun MusicPlayerOverlay(
         initialValue = 0.72f,
         targetValue = 1.0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(15000, easing = FastOutSlowInEasing),
+            animation = tween(7500, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "glowY"
@@ -143,7 +144,7 @@ fun MusicPlayerOverlay(
         initialValue = 0.55f,
         targetValue = 0.8f,
         animationSpec = infiniteRepeatable(
-            animation = tween(8000, easing = LinearEasing),
+            animation = tween(4000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "glowRadius"
@@ -472,66 +473,84 @@ fun MusicPlayerOverlay(
 
                             Spacer(modifier = Modifier.height(gapTimeControls))
 
-                            Row(
+                            Box(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
+                                contentAlignment = Alignment.Center
                             ) {
-                                val rewindInteractionExpanded = remember { MutableInteractionSource() }
                                 Image(
-                                    painter = painterResource(id = R.drawable.ic_fast_rewind),
+                                    painter = painterResource(
+                                        id = if (isShuffled) R.drawable.ic_shuffle_music else R.drawable.ic_no_shuffle_music
+                                    ),
                                     contentDescription = null,
                                     modifier = Modifier
-                                        .size(48.dp)
+                                        .align(Alignment.CenterStart)
+                                        .size(40.dp)
                                         .clip(CircleShape)
-                                        .indication(rewindInteractionExpanded, ripple(bounded = true))
-                                        .clickable(
-                                            interactionSource = rewindInteractionExpanded,
-                                            indication = null,
-                                            enabled = hasPrevious
-                                        ) { viewModel.skipPrevious() }
-                                        .padding(8.dp),
-                                    colorFilter = ColorFilter.tint(
-                                        if (hasPrevious) Color.White else Color(0x66FFFFFF)
-                                    )
+                                        .clickable { viewModel.toggleShuffle() }
+                                        .padding(6.dp),
+                                    colorFilter = ColorFilter.tint(Color.White)
                                 )
 
-                                Spacer(modifier = Modifier.width(32.dp))
-
-                                Box(
-                                    modifier = Modifier
-                                        .size(56.dp)
-                                        .clickable { viewModel.togglePlayPause() },
-                                    contentAlignment = Alignment.Center
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    val rewindInteractionExpanded = remember { MutableInteractionSource() }
                                     Image(
-                                        painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
+                                        painter = painterResource(id = R.drawable.ic_fast_rewind),
                                         contentDescription = null,
-                                        modifier = Modifier.size(if (isPlaying) 40.dp else 56.dp),
-                                        colorFilter = ColorFilter.tint(Color.White)
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(CircleShape)
+                                            .indication(rewindInteractionExpanded, ripple(bounded = true))
+                                            .clickable(
+                                                interactionSource = rewindInteractionExpanded,
+                                                indication = null,
+                                                enabled = hasPrevious
+                                            ) { viewModel.skipPrevious() }
+                                            .padding(8.dp),
+                                        colorFilter = ColorFilter.tint(
+                                            if (hasPrevious) Color.White else Color(0x66FFFFFF)
+                                        )
+                                    )
+
+                                    Spacer(modifier = Modifier.width(24.dp))
+
+                                    Box(
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .clickable { viewModel.togglePlayPause() },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Image(
+                                            painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(if (isPlaying) 32.dp else 44.dp),
+                                            colorFilter = ColorFilter.tint(Color.White)
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.width(24.dp))
+
+                                    val forwardInteractionExpanded = remember { MutableInteractionSource() }
+                                    Image(
+                                        painter = painterResource(id = R.drawable.ic_fast_forward),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(CircleShape)
+                                            .indication(forwardInteractionExpanded, ripple(bounded = true))
+                                            .clickable(
+                                                interactionSource = forwardInteractionExpanded,
+                                                indication = null,
+                                                enabled = hasNext
+                                            ) { viewModel.skipNext() }
+                                            .padding(8.dp),
+                                        colorFilter = ColorFilter.tint(
+                                            if (hasNext) Color.White else Color(0x66FFFFFF)
+                                        )
                                     )
                                 }
-
-                                Spacer(modifier = Modifier.width(32.dp))
-
-                                val forwardInteractionExpanded = remember { MutableInteractionSource() }
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_fast_forward),
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .clip(CircleShape)
-                                        .indication(forwardInteractionExpanded, ripple(bounded = true))
-                                        .clickable(
-                                            interactionSource = forwardInteractionExpanded,
-                                            indication = null,
-                                            enabled = hasNext
-                                        ) { viewModel.skipNext() }
-                                        .padding(8.dp),
-                                    colorFilter = ColorFilter.tint(
-                                        if (hasNext) Color.White else Color(0x66FFFFFF)
-                                    )
-                                )
                             }
 
                             Spacer(modifier = Modifier.height(gapBottom))

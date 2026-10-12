@@ -172,72 +172,6 @@ fun ArtistScreen(
                             placeholder = "Search artists"
                         )
 
-                        AnimatedVisibility(
-                            visible = searchQuery.isNotBlank(),
-                            enter = fadeIn() + expandVertically(),
-                            exit = fadeOut() + shrinkVertically()
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .padding(top = 12.dp)
-                                    .width(332.dp)
-                                    .border(
-                                        width = 1.dp,
-                                        color = Color(0xFFC70025),
-                                        shape = RoundedCornerShape(24.dp)
-                                    )
-                                    .background(
-                                        color = Color(0xFF201F1F),
-                                        shape = RoundedCornerShape(24.dp)
-                                    )
-                                    .padding(vertical = 8.dp)
-                            ) {
-                                when {
-                                    isSearching -> {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(80.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            CircularProgressIndicator(color = Color(0xFFC70025))
-                                        }
-                                    }
-                                    searchResults.isEmpty() -> {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(80.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = "No results found",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = Color(0xFF8E8D8D)
-                                            )
-                                        }
-                                    }
-                                    else -> {
-                                        searchResults.forEach { artist ->
-                                            Text(
-                                                text = artist.name,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = Color.White,
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clickable {
-                                                        onArtistClick(artist.id, artist.name)
-                                                        searchQuery = ""
-                                                        viewModel.clearSearch()
-                                                    }
-                                                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
                         Spacer(modifier = Modifier.height(24.dp))
 
                         when {
@@ -257,14 +191,23 @@ fun ArtistScreen(
                                     modifier = Modifier.padding(16.dp)
                                 )
                             }
+                            searchQuery.isNotBlank() && searchResults.isEmpty() && !isSearching -> {
+                                Text(
+                                    text = "No results found",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFF8E8D8D),
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
                             else -> {
+                                val displayed = if (searchQuery.isNotBlank()) searchResults else artists
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 16.dp),
                                     verticalArrangement = Arrangement.spacedBy(20.dp)
                                 ) {
-                                    artists.chunked(3).forEach { rowArtists ->
+                                    displayed.chunked(3).forEach { rowArtists ->
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)

@@ -25,12 +25,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.devfamily.sehara.R
 import kotlinx.coroutines.delay
+import android.app.Activity
+import android.content.pm.ActivityInfo
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun LandingScreen(
     onTimeout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
+    DisposableEffect(Unit) {
+        val activity = context as? Activity
+        val previous = activity?.requestedOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        onDispose {
+            activity?.requestedOrientation = previous
+        }
+    }
+
     LaunchedEffect(Unit) {
         delay(1000)
         onTimeout()

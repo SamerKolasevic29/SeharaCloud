@@ -165,6 +165,58 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         _isPlaying.value = true
     }
 
+    private fun buildMediaItem(song: SongItem, baseUrl: String): MediaItem {
+        val metadata = MediaMetadata.Builder()
+            .setTitle(song.title ?: song.filename)
+            .setArtist(song.artist ?: "Unknown Artist")
+            .setArtworkUri(song.thumbnailUrl?.let { android.net.Uri.parse(it) })
+            .build()
+
+        return MediaItem.Builder()
+            .setUri("$baseUrl/api/music/${song.id}/stream")
+            .setMediaMetadata(metadata)
+            .build()
+    }
+
+    fun loadSongFromSearch(item: SongItem) {
+        loadSong(
+            item.id,
+            item.title ?: item.filename,
+            item.artist ?: "Unknown Artist",
+            (item.durationSec ?: 0) * 1000L,
+            item.thumbnailUrl,
+            item.genre
+        )
+
+        val genreName = item.genre
+        if (genreName.isNullOrBlank()) return
+
+        viewModelScope.launch {
+            try {
+                val genre = RetrofitClient.instance.getGenres()
+                    .firstOrNull { it.name.equals(genreName, ignoreCase = true) } ?: return@launch
+                val list = RetrofitClient.instance.getMusicByGenre(genre.id)
+                val index = list.indexOfFirst { it.id == item.id }
+                val player = controller ?: return@launch
+
+                if (index < 0 || queue.isNotEmpty() || _currentSong.value.id != item.id) return@launch
+
+                val baseUrl = RetrofitClient.BASE_URL.removeSuffix("/")
+                val before = list.subList(0, index).map { buildMediaItem(it, baseUrl) }
+                val after = list.subList(index + 1, list.size).map { buildMediaItem(it, baseUrl) }
+
+                if (after.isNotEmpty()) player.addMediaItems(after)
+                if (before.isNotEmpty()) player.addMediaItems(0, before)
+
+                queue = list
+                currentQueueIndex = index
+                _hasPrevious.value = index > 0
+                _hasNext.value = index < list.size - 1
+            } catch (e: Exception) {
+            }
+        }
+    }
+
     fun loadSongFromQueue(item: SongItem, queueList: List<SongItem>) {
         val player = controller
         if (player == null) {
@@ -177,18 +229,7 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
 
         val baseUrl = RetrofitClient.BASE_URL.removeSuffix("/")
 
-        val mediaItems = queueList.map { song ->
-            val metadata = MediaMetadata.Builder()
-                .setTitle(song.title ?: song.filename)
-                .setArtist(song.artist ?: "Unknown Artist")
-                .setArtworkUri(song.thumbnailUrl?.let { android.net.Uri.parse(it) })
-                .build()
-
-            MediaItem.Builder()
-                .setUri("$baseUrl/api/music/${song.id}/stream")
-                .setMediaMetadata(metadata)
-                .build()
-        }
+        val mediaItems = queueList.map { song -> buildMediaItem(song, baseUrl) }
 
         player.setMediaItems(mediaItems, currentQueueIndex, 0L)
         player.prepare()

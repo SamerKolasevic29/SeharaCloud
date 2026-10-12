@@ -37,6 +37,12 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.devfamily.sehara.R
 import com.devfamily.sehara.data.SongItem
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.ColorFilter
 
 @Composable
 fun AllTracksSection(
@@ -46,17 +52,74 @@ fun AllTracksSection(
     title: String = "All tracks",
     bottomContentPadding: Dp = 0.dp,
     currentSongId: String = "",
-    isPlaying: Boolean = false
+    isPlaying: Boolean = false,
+    listState: LazyListState = rememberLazyListState(),
+    onHeaderSwipeDown: (() -> Unit)? = null,
+    ascending: Boolean = true,
+    sortByArtist: Boolean = false,
+    onToggleOrder: (() -> Unit)? = null,
+    onToggleSortBy: (() -> Unit)? = null
 ) {
     Column(
         modifier = modifier.fillMaxWidth()
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
-            color = Color.White,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .pointerInput(onHeaderSwipeDown) {
+                    var total = 0f
+                    detectVerticalDragGestures(
+                        onDragStart = { total = 0f },
+                        onDragEnd = {
+                            if (total > 40.dp.toPx()) onHeaderSwipeDown?.invoke()
+                            total = 0f
+                        },
+                        onDragCancel = { total = 0f },
+                        onVerticalDrag = { change, dragAmount ->
+                            change.consume()
+                            total += dragAmount
+                        }
+                    )
+                }
+                .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                color = Color.White
+            )
+            if (onToggleOrder != null && onToggleSortBy != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "(${items.size})",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
+                    color = Color(0xFF8E8D8D)
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Image(
+                    painter = painterResource(
+                        id = if (ascending) R.drawable.ic_arrow_down else R.drawable.ic_arrow_up
+                    ),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clickable { onToggleOrder() },
+                    colorFilter = ColorFilter.tint(Color.White)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Image(
+                    painter = painterResource(
+                        id = if (sortByArtist) R.drawable.ic_artist else R.drawable.ic_music
+                    ),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clickable { onToggleSortBy() },
+                    colorFilter = ColorFilter.tint(Color.White)
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -71,6 +134,7 @@ fun AllTracksSection(
                 .padding(top = 12.dp)
         ) {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(bottom = bottomContentPadding)
             ) {
@@ -151,13 +215,29 @@ fun AllTracksRow(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                Text(
-                    text = item.artist ?: "Unknown Artist",
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                    color = Color(0xFF8E8D8D),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = item.artist ?: "Unknown Artist",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                        color = Color(0xFF8E8D8D),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    val totalSeconds = item.durationSec ?: 0
+                    if (totalSeconds > 0) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "%d:%02d".format(totalSeconds / 60, totalSeconds % 60),
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                            color = Color(0xFF8E8D8D),
+                            maxLines = 1
+                        )
+                    }
+                }
             }
 
             if (isCurrent) {

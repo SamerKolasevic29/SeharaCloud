@@ -164,6 +164,13 @@ fun MusicPlayerOverlay(
         val miniAlpha = (1f - p * 3f).coerceIn(0f, 1f)
         val expandedAlpha = ((p - 0.3f) / 0.7f).coerceIn(0f, 1f)
         val shape = RoundedCornerShape(corner)
+        val compact = maxH < 700.dp
+        val gapTop = if (compact) 8.dp else 32.dp
+        val gapThumbTop = if (compact) 12.dp else 48.dp
+        val gapThumbBottom = if (compact) 12.dp else 32.dp
+        val gapTitleSlider = if (compact) 16.dp else 54.dp
+        val gapTimeControls = if (compact) 16.dp else 64.dp
+        val gapBottom = if (compact) 12.dp else 32.dp
 
         Box(
             modifier = Modifier
@@ -257,7 +264,7 @@ fun MusicPlayerOverlay(
                                 .navigationBarsPadding(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(modifier = Modifier.height(32.dp))
+                            Spacer(modifier = Modifier.height(gapTop))
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -288,11 +295,18 @@ fun MusicPlayerOverlay(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(48.dp))
+                            Spacer(modifier = Modifier.height(gapThumbTop))
 
-                            Box(
+                            BoxWithConstraints(
                                 modifier = Modifier
-                                    .size(320.dp)
+                                    .weight(1f)
+                                    .fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                val thumbSide = minOf(maxWidth, maxHeight, 320.dp)
+                                Box(
+                                    modifier = Modifier
+                                        .size(thumbSide)
                                     .clickable(
                                         interactionSource = remember { MutableInteractionSource() },
                                         indication = null
@@ -371,9 +385,10 @@ fun MusicPlayerOverlay(
                                         )
                                     }
                                 }
+                                }
                             }
 
-                            Spacer(modifier = Modifier.height(32.dp))
+                            Spacer(modifier = Modifier.height(gapThumbBottom))
 
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
@@ -398,7 +413,7 @@ fun MusicPlayerOverlay(
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(54.dp))
+                            Spacer(modifier = Modifier.height(gapTitleSlider))
 
                             if (hasDuration) {
                                 Slider(
@@ -455,7 +470,7 @@ fun MusicPlayerOverlay(
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(64.dp))
+                            Spacer(modifier = Modifier.height(gapTimeControls))
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -519,7 +534,7 @@ fun MusicPlayerOverlay(
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(32.dp))
+                            Spacer(modifier = Modifier.height(gapBottom))
                         }
                     }
                 }

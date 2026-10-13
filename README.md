@@ -322,6 +322,27 @@ The API address is **not hardcoded** — it is read from `local.properties` at b
     <td><img src="docs/assets/mobile-app-screenshots/screenshot5.jpg" alt="Screenshot 5" width="250"></td>
     <td><img src="docs/assets/mobile-app-screenshots/screenshot6.jpg" alt="Screenshot 6" width="250"></td>
   </tr>
+  
+  <tr>
+    <td colspan="3" align="center">
+      <img src="docs/assets/mobile-app-screenshots/screenshot7.jpg" alt="Screenshot 7" width="250">
+      <img src="docs/assets/mobile-app-screenshots/screenshot8.jpg" alt="Screenshot 8" width="250">
+    </td>
+  </tr>
+  
+  <tr>
+    <td colspan="3" align="center">
+      <img src="docs/assets/mobile-app-screenshots/screenshot9.jpg" alt="Screenshot 9" width="250">
+      <img src="docs/assets/mobile-app-screenshots/screenshot10.jpg" alt="Screenshot 10" width="250">
+    </td>
+  </tr>
+  
+  <tr>
+    <td colspan="3" align="center">
+      <img src="docs/assets/mobile-app-screenshots/screenshot11.jpg" alt="Screenshot 11" width="250">
+      <img src="docs/assets/mobile-app-screenshots/screenshot12.jpg" alt="Screenshot 12" width="250">
+    </td>
+  </tr>
 </table>
 </p>
 
@@ -388,7 +409,7 @@ client/SeharaCloud.MobileApp/
             │       └── screens/
             │           ├── landing/          # LandingScreen
             │           ├── home/             # HomeScreen (module picker)
-            │           ├── music/            # MusicHomeScreen, ArtistScreen, GenreScreen,
+            │           ├── music/            # MusicHomeScreen, ArtistScreen, GenreScreen, FavoriteScreen
             │           │                     # MusicListScreen, MusicFilter + ViewModels
             │           │                     # (Music, Artist, Genre, MusicList, MusicPlayer)
             │           ├── video/            # VideoHomeScreen, VideoViewModel, VideoPlayerViewModel

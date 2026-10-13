@@ -15,6 +15,7 @@ import androidx.navigation.navArgument
 import com.devfamily.sehara.ui.screens.home.HomeScreen
 import com.devfamily.sehara.ui.screens.landing.LandingScreen
 import com.devfamily.sehara.ui.screens.music.ArtistScreen
+import com.devfamily.sehara.ui.screens.music.FavoriteScreen
 import com.devfamily.sehara.ui.screens.music.GenreScreen
 import com.devfamily.sehara.ui.screens.music.MusicFilter
 import com.devfamily.sehara.ui.screens.music.MusicHomeScreen
@@ -89,6 +90,14 @@ fun AppNavigation() {
                 onBackClick = { navController.popBackStack() },
                 onArtistClick = { navController.navigate(Routes.Artist.route) },
                 onGenreClick = { navController.navigate(Routes.Genre.route) },
+                onFavoriteClick = { navController.navigate(Routes.Favorite.route) },
+                playerViewModel = playerViewModel
+            )
+        }
+
+        composable(Routes.Favorite.route) {
+            FavoriteScreen(
+                onBackClick = { navController.popBackStack() },
                 playerViewModel = playerViewModel
             )
         }
@@ -109,8 +118,6 @@ fun AppNavigation() {
                 }
             )
         }
-
-
 
         composable(
             route = Routes.DocumentViewer.route,
@@ -186,6 +193,11 @@ fun AppNavigation() {
                 },
                 onGenreClick = {
                     navController.navigate(Routes.Genre.route) {
+                        popUpTo(Routes.Music.route)
+                    }
+                },
+                onFavoriteClick = {
+                    navController.navigate(Routes.Favorite.route) {
                         popUpTo(Routes.Music.route)
                     }
                 },

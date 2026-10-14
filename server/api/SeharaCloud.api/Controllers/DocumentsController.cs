@@ -5,13 +5,13 @@ using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/[controller]")]
-public class VideoController : ControllerBase
+public class DocumentsController : ControllerBase
 {
-    private readonly IVideoService _service;
+    private readonly IDocumentService _service;
 
-    public VideoController(IVideoService service) { _service = service; }
+    public DocumentsController(IDocumentService service) {_service = service;}
 
-     // GET /api/videos
+    // GET /api/documents
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -19,23 +19,23 @@ public class VideoController : ControllerBase
         return Ok(result);
     }
 
-     // GET /api/videos/recent
+    // GET /api/documents/recent
     [HttpGet("recent")]
-    public async Task<IActionResult> GetRecent()
+    public async Task<IActionResult> GetRecentAsync()
     {
         var result = await _service.GetRecentAsync();
         return Ok(result);
     }
 
-     // GET /api/videos/search?q=something
+    // GET /api/documents/search?q=Linux
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] string q)
     {
-        var result = await _service.SearchAsync(q);
+        var result = await _service.SearchDocumentAsync(q);
         return Ok(result);
     }
 
-    // GET /api/videos/3fa85f64-5717-4562-b3fc-2c963f66afa6/stream
+   // GET /api/documents/3fa85f64-5717-4562-b3fc-2c963f66afa6/stream
     [HttpGet("{id:guid}/stream")]
     public async Task<IActionResult> Stream(Guid id)
     {

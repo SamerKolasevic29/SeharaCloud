@@ -16,13 +16,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,12 +52,14 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+
 @Composable
 fun MusicListScreen(
     filter: MusicFilter,
     onBackClick: () -> Unit = {},
     onArtistClick: () -> Unit = {},
     onGenreClick: () -> Unit = {},
+    onFavoriteClick: () -> Unit = {},
     viewModel: MusicListViewModel = viewModel(),
     playerViewModel: MusicPlayerViewModel
 ) {
@@ -255,7 +257,7 @@ fun MusicListScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(width = 300.dp, height = 150.dp)
+                            .size(width = 300.dp, height = 265.dp)
                             .background(
                                 color = Color.Black,
                                 shape = RoundedCornerShape(30.dp)
@@ -294,21 +296,84 @@ fun MusicListScreen(
                                     .fillMaxWidth()
                                     .clickable {
                                         isMenuOpen = false
-                                        if (cameFromArtist) onGenreClick() else onArtistClick()
+                                        onArtistClick()
                                     }
                                     .padding(vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Image(
-                                    painter = painterResource(
-                                        id = if (cameFromArtist) R.drawable.ic_genre else R.drawable.ic_artist
-                                    ),
+                                    painter = painterResource(id = R.drawable.ic_artist),
                                     contentDescription = null,
                                     modifier = Modifier.size(24.dp)
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
-                                    text = if (cameFromArtist) "Genres" else "Artists",
+                                    text = "Artists",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = Color.White
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            HorizontalDivider(
+                                color = Color(0xFF767676),
+                                thickness = 1.dp
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        isMenuOpen = false
+                                        onGenreClick()
+                                    }
+                                    .padding(vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_genre),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Genres",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = Color.White
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            HorizontalDivider(
+                                color = Color(0xFF767676),
+                                thickness = 1.dp
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        isMenuOpen = false
+                                        onFavoriteClick()
+                                    }
+                                    .padding(vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_fav_filled),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(24.dp),
+                                    colorFilter = ColorFilter.tint(Color(0xFFFF3054))
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Favorites",
                                     style = MaterialTheme.typography.titleLarge,
                                     color = Color.White
                                 )

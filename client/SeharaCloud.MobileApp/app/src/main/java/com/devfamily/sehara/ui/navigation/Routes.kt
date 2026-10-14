@@ -7,6 +7,7 @@ sealed class Routes(val route: String) {
     object Music : Routes("music")
     object Artist : Routes("artist")
     object Genre : Routes("genre")
+    object Favorite : Routes("favorite")
     object MusicList : Routes("music_list/{type}/{id}/{name}") {
         fun createRoute(type: String, id: String, name: String) =
             "music_list/$type/$id/${Uri.encode(name)}"

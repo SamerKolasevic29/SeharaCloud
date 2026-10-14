@@ -1,5 +1,6 @@
 package com.devfamily.sehara.ui.components
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -81,6 +82,7 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicPlayerOverlay(
@@ -96,6 +98,8 @@ fun MusicPlayerOverlay(
     val hasPrevious by viewModel.hasPreviousFlow.collectAsState()
     val hasNext by viewModel.hasNextFlow.collectAsState()
     val isShuffled by viewModel.isShuffled.collectAsState()
+    val favoriteIds by viewModel.favoriteIds.collectAsState()
+    val isFavorite = song.id in favoriteIds
 
     val accentColor = Color(0xFFFF3054)
 
@@ -291,8 +295,6 @@ fun MusicPlayerOverlay(
                                             },
                                         colorFilter = ColorFilter.tint(Color.White)
                                     )
-                                } else {
-                                    Spacer(modifier = Modifier.width(32.dp))
                                 }
                             }
 
@@ -308,84 +310,84 @@ fun MusicPlayerOverlay(
                                 Box(
                                     modifier = Modifier
                                         .size(thumbSide)
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null
-                                    ) {
-                                        if (progress.value == 1f) viewModel.openCurrentArtist()
-                                    }
-                                    .pointerInput(Unit) {
-                                        val tracker = VelocityTracker()
-                                        val minDistance = 40.dp.toPx()
-                                        val flickDistance = 16.dp.toPx()
-                                        val flickVelocity = 700f
-                                        detectHorizontalDragGestures(
-                                            onDragStart = { tracker.resetTracking() },
-                                            onDragEnd = {
-                                                val vx = tracker.calculateVelocity().x
-                                                scope.launch {
-                                                    val d = thumbDrag.value
-                                                    val goNext = viewModel.hasNext &&
-                                                            (d < -minDistance || (d < -flickDistance && vx < -flickVelocity))
-                                                    val goPrev = viewModel.hasPrevious &&
-                                                            (d > minDistance || (d > flickDistance && vx > flickVelocity))
-                                                    when {
-                                                        goNext -> {
-                                                            thumbDrag.animateTo(-stepPx, tween(200))
-                                                            viewModel.skipNext()
-                                                            delay(700)
-                                                            if (thumbDrag.value != 0f) thumbDrag.animateTo(0f, tween(200))
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null
+                                        ) {
+                                            if (progress.value == 1f) viewModel.openCurrentArtist()
+                                        }
+                                        .pointerInput(Unit) {
+                                            val tracker = VelocityTracker()
+                                            val minDistance = 40.dp.toPx()
+                                            val flickDistance = 16.dp.toPx()
+                                            val flickVelocity = 700f
+                                            detectHorizontalDragGestures(
+                                                onDragStart = { tracker.resetTracking() },
+                                                onDragEnd = {
+                                                    val vx = tracker.calculateVelocity().x
+                                                    scope.launch {
+                                                        val d = thumbDrag.value
+                                                        val goNext = viewModel.hasNext &&
+                                                                (d < -minDistance || (d < -flickDistance && vx < -flickVelocity))
+                                                        val goPrev = viewModel.hasPrevious &&
+                                                                (d > minDistance || (d > flickDistance && vx > flickVelocity))
+                                                        when {
+                                                            goNext -> {
+                                                                thumbDrag.animateTo(-stepPx, tween(200))
+                                                                viewModel.skipNext()
+                                                                delay(700)
+                                                                if (thumbDrag.value != 0f) thumbDrag.animateTo(0f, tween(200))
+                                                            }
+                                                            goPrev -> {
+                                                                thumbDrag.animateTo(stepPx, tween(200))
+                                                                viewModel.skipPrevious()
+                                                                delay(700)
+                                                                if (thumbDrag.value != 0f) thumbDrag.animateTo(0f, tween(200))
+                                                            }
+                                                            else -> thumbDrag.animateTo(0f, tween(250))
                                                         }
-                                                        goPrev -> {
-                                                            thumbDrag.animateTo(stepPx, tween(200))
-                                                            viewModel.skipPrevious()
-                                                            delay(700)
-                                                            if (thumbDrag.value != 0f) thumbDrag.animateTo(0f, tween(200))
-                                                        }
-                                                        else -> thumbDrag.animateTo(0f, tween(250))
+                                                    }
+                                                },
+                                                onDragCancel = {
+                                                    scope.launch { thumbDrag.animateTo(0f, tween(250)) }
+                                                },
+                                                onHorizontalDrag = { change, dragAmount ->
+                                                    tracker.addPosition(change.uptimeMillis, change.position)
+                                                    if (progress.value == 1f) {
+                                                        val raw = thumbDrag.value + dragAmount
+                                                        val blocked = (raw < 0f && !viewModel.hasNext) || (raw > 0f && !viewModel.hasPrevious)
+                                                        val delta = if (blocked) dragAmount * 0.3f else dragAmount
+                                                        scope.launch { thumbDrag.snapTo(thumbDrag.value + delta) }
                                                     }
                                                 }
-                                            },
-                                            onDragCancel = {
-                                                scope.launch { thumbDrag.animateTo(0f, tween(250)) }
-                                            },
-                                            onHorizontalDrag = { change, dragAmount ->
-                                                tracker.addPosition(change.uptimeMillis, change.position)
-                                                if (progress.value == 1f) {
-                                                    val raw = thumbDrag.value + dragAmount
-                                                    val blocked = (raw < 0f && !viewModel.hasNext) || (raw > 0f && !viewModel.hasPrevious)
-                                                    val delta = if (blocked) dragAmount * 0.3f else dragAmount
-                                                    scope.launch { thumbDrag.snapTo(thumbDrag.value + delta) }
-                                                }
-                                            }
-                                        )
+                                            )
+                                        }
+                                ) {
+                                    listOf(-1, 0, 1).forEach { rel ->
+                                        val exists = when (rel) {
+                                            -1 -> viewModel.hasPrevious
+                                            1 -> viewModel.hasNext
+                                            else -> true
+                                        }
+                                        if (exists) {
+                                            AsyncImage(
+                                                model = if (rel == 0) song.thumbnailUrl else viewModel.thumbnailAt(rel),
+                                                contentDescription = null,
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .offset {
+                                                        val drag = if (settledSongId == song.id) thumbDrag.value else 0f
+                                                        IntOffset((drag + rel * stepPx).roundToInt(), 0)
+                                                    }
+                                                    .clip(RoundedCornerShape(20.dp))
+                                                    .background(Color(0xFF151515)),
+                                                contentScale = ContentScale.Crop,
+                                                error = painterResource(id = R.drawable.ic_unknown_song_thumb),
+                                                placeholder = painterResource(id = R.drawable.music_splash_bg),
+                                                fallback = painterResource(id = R.drawable.ic_unknown_song_thumb)
+                                            )
+                                        }
                                     }
-                            ) {
-                                listOf(-1, 0, 1).forEach { rel ->
-                                    val exists = when (rel) {
-                                        -1 -> viewModel.hasPrevious
-                                        1 -> viewModel.hasNext
-                                        else -> true
-                                    }
-                                    if (exists) {
-                                        AsyncImage(
-                                            model = if (rel == 0) song.thumbnailUrl else viewModel.thumbnailAt(rel),
-                                            contentDescription = null,
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .offset {
-                                                    val drag = if (settledSongId == song.id) thumbDrag.value else 0f
-                                                    IntOffset((drag + rel * stepPx).roundToInt(), 0)
-                                                }
-                                                .clip(RoundedCornerShape(20.dp))
-                                                .background(Color(0xFF151515)),
-                                            contentScale = ContentScale.Crop,
-                                            error = painterResource(id = R.drawable.ic_unknown_song_thumb),
-                                            placeholder = painterResource(id = R.drawable.music_splash_bg),
-                                            fallback = painterResource(id = R.drawable.ic_unknown_song_thumb)
-                                        )
-                                    }
-                                }
                                 }
                             }
 
@@ -551,6 +553,22 @@ fun MusicPlayerOverlay(
                                         )
                                     )
                                 }
+
+                                Image(
+                                    painter = painterResource(
+                                        id = if (isFavorite) R.drawable.ic_fav_filled else R.drawable.ic_fav_outlined
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .align(Alignment.CenterEnd)
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .clickable { viewModel.toggleFavorite() }
+                                        .padding(6.dp),
+                                    colorFilter = ColorFilter.tint(
+                                        if (isFavorite) accentColor else Color.White
+                                    )
+                                )
                             }
 
                             Spacer(modifier = Modifier.height(gapBottom))

@@ -1,6 +1,7 @@
 package com.devfamily.sehara.ui.screens.music
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
@@ -49,6 +50,13 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
 
     private val _isShuffled = MutableStateFlow(false)
     val isShuffled: StateFlow<Boolean> = _isShuffled.asStateFlow()
+
+    private val favoritesPrefs = application.getSharedPreferences("favorites", Context.MODE_PRIVATE)
+
+    private val _favoriteIds = MutableStateFlow(
+        favoritesPrefs.getStringSet("song_ids", emptySet())?.toSet() ?: emptySet()
+    )
+    val favoriteIds: StateFlow<Set<String>> = _favoriteIds.asStateFlow()
 
     private var originalQueue: List<SongItem> = emptyList()
 
@@ -322,6 +330,15 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
 
         _hasPrevious.value = newIndex > 0
         _hasNext.value = newIndex < newQueue.size - 1
+    }
+
+    fun toggleFavorite() {
+        val id = _currentSong.value.id
+        if (id.isEmpty()) return
+        val current = _favoriteIds.value
+        val updated = if (id in current) current - id else current + id
+        _favoriteIds.value = updated
+        favoritesPrefs.edit().putStringSet("song_ids", updated).apply()
     }
 
     fun thumbnailAt(offset: Int): String? {

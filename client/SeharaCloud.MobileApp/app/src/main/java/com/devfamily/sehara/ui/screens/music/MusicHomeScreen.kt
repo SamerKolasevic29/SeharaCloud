@@ -93,6 +93,7 @@ fun MusicHomeScreen(
     onBackClick: () -> Unit = {},
     onArtistClick: () -> Unit = {},
     onGenreClick: () -> Unit = {},
+    onFavoriteClick: () -> Unit = {},
     viewModel: MusicViewModel = viewModel(),
     playerViewModel: MusicPlayerViewModel
 ) {
@@ -455,7 +456,7 @@ fun MusicHomeScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(width = 300.dp, height = 210.dp)
+                                    .size(width = 300.dp, height = 265.dp)
                                     .background(
                                         color = Color.Black,
                                         shape = RoundedCornerShape(30.dp)
@@ -539,6 +540,38 @@ fun MusicHomeScreen(
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Text(
                                             text = "Genres",
+                                            style = MaterialTheme.typography.titleLarge,
+                                            color = Color.White
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    HorizontalDivider(
+                                        color = Color(0xFF767676),
+                                        thickness = 1.dp
+                                    )
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                isMenuOpen = false
+                                                onFavoriteClick()
+                                            }
+                                            .padding(vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Image(
+                                            painter = painterResource(id = R.drawable.ic_fav_filled),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp),
+                                            colorFilter = ColorFilter.tint(Color(0xFFFF3054))
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text(
+                                            text = "Favorites",
                                             style = MaterialTheme.typography.titleLarge,
                                             color = Color.White
                                         )

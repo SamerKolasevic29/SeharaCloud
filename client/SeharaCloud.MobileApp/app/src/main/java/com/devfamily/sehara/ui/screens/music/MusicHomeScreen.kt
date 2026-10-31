@@ -101,6 +101,7 @@ fun MusicHomeScreen(
     val musicList by viewModel.musicList.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     var playerExpanded by remember { mutableStateOf(false) }
     var isMenuOpen by remember { mutableStateOf(false) }
@@ -383,7 +384,16 @@ fun MusicHomeScreen(
                                 }
                             }
 
-                            if (recentList.isNotEmpty()) {
+                            if (isLoading && recentList.isEmpty()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(160.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(color = Color(0xFFFF3054))
+                                }
+                            } else if (recentList.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(20.dp))
                                 RecentlyAddedSection(
                                     items = recentList,
@@ -398,7 +408,16 @@ fun MusicHomeScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                         }
 
-                        if (musicList.isNotEmpty()) {
+                        if (isLoading && musicList.isEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = Color(0xFFFF3054))
+                            }
+                        } else if (musicList.isNotEmpty()) {
                             AllTracksSection(
                                 items = sortedMusicList,
                                 onItemClick = { item ->

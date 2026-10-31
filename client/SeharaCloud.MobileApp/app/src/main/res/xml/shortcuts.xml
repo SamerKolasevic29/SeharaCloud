@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="open_music"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_music"
+        android:shortcutShortLabel="@string/shortcut_music_short"
+        android:shortcutLongLabel="@string/shortcut_music_long">
+        <intent
+            android:action="com.devfamily.sehara.OPEN_MUSIC"
+            android:targetPackage="com.devfamily.sehara"
+            android:targetClass="com.devfamily.sehara.MainActivity" />
+    </shortcut>
+</shortcuts>

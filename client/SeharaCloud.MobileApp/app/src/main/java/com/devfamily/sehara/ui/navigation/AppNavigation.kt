@@ -27,12 +27,26 @@ import com.devfamily.sehara.ui.screens.docs.DocumentViewerScreen
 import com.devfamily.sehara.ui.screens.photo.PhotoHostScreen
 import com.devfamily.sehara.ui.screens.photo.PhotoViewModel
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    openMusic: Boolean = false,
+    onOpenMusicHandled: () -> Unit = {}
+) {
     val navController = rememberNavController()
     val playerViewModel: MusicPlayerViewModel = viewModel()
     val photoViewModel: PhotoViewModel = viewModel()
+    val startRoute = remember { if (openMusic) Routes.Home.route else Routes.Landing.route }
+
+    LaunchedEffect(openMusic) {
+        if (openMusic) {
+            navController.navigate(Routes.Music.route) {
+                launchSingleTop = true
+            }
+            onOpenMusicHandled()
+        }
+    }
 
     LaunchedEffect(Unit) {
         playerViewModel.openArtist.collect { (id, name) ->
@@ -59,7 +73,7 @@ fun AppNavigation() {
 
     NavHost(
         navController = navController,
-        startDestination = Routes.Landing.route,
+        startDestination = startRoute,
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF161616))

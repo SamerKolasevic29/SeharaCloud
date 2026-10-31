@@ -10,12 +10,15 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -59,14 +62,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.devfamily.sehara.R
+import com.devfamily.sehara.data.VideoItem
 import com.devfamily.sehara.ui.screens.video.VideoPlayerMode
 import com.devfamily.sehara.ui.screens.video.VideoPlayerViewModel
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -77,7 +81,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 @Composable
 fun VideoPlayerOverlay(
     viewModel: VideoPlayerViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    recentList: List<VideoItem> = emptyList()
 ) {
     val video by viewModel.currentVideo.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
@@ -86,18 +91,19 @@ fun VideoPlayerOverlay(
     val hasDuration = video.durationMs > 0L
     val hasPrevious by viewModel.hasPreviousFlow.collectAsState()
     val hasNext by viewModel.hasNextFlow.collectAsState()
-    val categoryQueue by viewModel.categoryQueue.collectAsState()
     val context = LocalContext.current
     var videoAspectRatio by remember(video.id) { mutableFloatStateOf(16f / 9f) }
 
-    LaunchedEffect(video.id) {
-        viewModel.exoPlayer.addListener(object : androidx.media3.common.Player.Listener {
+    DisposableEffect(video.id) {
+        val listener = object : androidx.media3.common.Player.Listener {
             override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
                 if (videoSize.width > 0 && videoSize.height > 0) {
                     videoAspectRatio = videoSize.width.toFloat() / videoSize.height.toFloat()
                 }
             }
-        })
+        }
+        viewModel.exoPlayer.addListener(listener)
+        onDispose { viewModel.exoPlayer.removeListener(listener) }
     }
 
     when (playerMode) {
@@ -124,18 +130,24 @@ fun VideoPlayerOverlay(
                 }
             }
 
-            Column(
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White)
-                    .verticalScroll(rememberScrollState())
-                    .statusBarsPadding()
-                    .navigationBarsPadding()
+                    .background(Color.Black)
             ) {
-                Box(
+                val screenHeight = maxHeight
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(videoAspectRatio)
+                        .fillMaxSize()
+                        .background(Color(0xFF201F1F))
+                        .verticalScroll(rememberScrollState())
+                        .statusBarsPadding()
+                        .navigationBarsPadding()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(videoAspectRatio)
                         .fillMaxHeight(if (videoAspectRatio < 1f) 0.6f else 1f)
                         .background(Color.Black)
                         .pointerInput(Unit) {
@@ -172,7 +184,6 @@ fun VideoPlayerOverlay(
                         },
                         modifier = Modifier.fillMaxSize()
                     )
-
 
                     androidx.compose.animation.AnimatedVisibility(
                         visible = controlsVisible,
@@ -375,80 +386,34 @@ fun VideoPlayerOverlay(
                     Text(
                         text = video.title,
                         style = MaterialTheme.typography.titleMedium.copy(
-                            color = Color(0xFF1A1A1A),
+                            color = Color.White,
                             fontWeight = FontWeight.Bold
                         ),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(Color(0xFFC70025))
-                                .padding(horizontal = 8.dp, vertical = 3.dp)
-                        ) {
-                            Text(
-                                text = video.category.replaceFirstChar { it.uppercase() },
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = Color.White,
-                                    fontWeight = FontWeight.SemiBold
-                                )
+                    if (video.durationMs > 0L) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = viewModel.formatTime(video.durationMs),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = Color(0xFF8E8D8D)
                             )
-                        }
-                        if (video.durationMs > 0L) {
-                            Text(
-                                text = viewModel.formatTime(video.durationMs),
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = Color(0xFF8E8D8D)
-                                )
-                            )
-                        }
+                        )
                     }
                 }
 
-                if (categoryQueue.isNotEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(Color(0xFFE0E0E0))
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .width(3.dp)
-                                .height(16.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(Color(0xFFC70025))
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "More in ${video.category.replaceFirstChar { it.uppercase() }}",
-                            style = MaterialTheme.typography.titleSmall.copy(
-                                color = Color(0xFF1A1A1A),
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 13.sp
-                            )
+                    val otherRecent = recentList.filter { it.id != video.id }
+                    if (otherRecent.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        VideoRecentSection(
+                            items = otherRecent,
+                            onItemClick = { item ->
+                                viewModel.loadVideo(item, recentList)
+                            },
+                            modifier = Modifier.heightIn(min = screenHeight * 0.8f)
                         )
                     }
-
-                    VideoListScrollable(
-                        items = categoryQueue.filter { it.id != video.id },
-                        onItemClick = { item ->
-                            viewModel.loadVideo(item, categoryQueue)
-                        }
-                    )
                 }
             }
         }

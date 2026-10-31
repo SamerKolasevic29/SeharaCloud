@@ -1,31 +1,41 @@
 package com.devfamily.sehara.ui.components
 
-import androidx.compose.animation.AnimatedContent
+import android.annotation.SuppressLint
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,32 +45,44 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp as lerpColor
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp as lerpDp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.devfamily.sehara.R
 import com.devfamily.sehara.ui.screens.music.MusicPlayerViewModel
 import kotlin.math.roundToInt
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.navigationBarsPadding
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicPlayerOverlay(
@@ -75,441 +97,598 @@ fun MusicPlayerOverlay(
     val hasDuration = song.durationMs > 0L
     val hasPrevious by viewModel.hasPreviousFlow.collectAsState()
     val hasNext by viewModel.hasNextFlow.collectAsState()
+    val isShuffled by viewModel.isShuffled.collectAsState()
+    val favoriteIds by viewModel.favoriteIds.collectAsState()
+    val isFavorite = song.id in favoriteIds
+
+    val accentColor = Color(0xFFFF3054)
 
     if (song.id.isEmpty()) return
 
-    AnimatedContent(
-        targetState = isExpanded,
-        transitionSpec = {
-            if (targetState) {
-                (fadeIn(tween(400)) + expandVertically(
-                    animationSpec = tween(400),
-                    expandFrom = Alignment.Top
-                )) togetherWith shrinkVertically(
-                    animationSpec = tween(400),
-                    shrinkTowards = Alignment.Top
-                )
-            } else {
-                (fadeIn(tween(400)) + expandVertically(
-                    animationSpec = tween(400),
-                    expandFrom = Alignment.Top
-                )) togetherWith shrinkVertically(
-                    animationSpec = tween(400),
-                    shrinkTowards = Alignment.Top
-                )
-            }
-        },
-        label = "player_expand"
-    ) { expanded ->
-        if (expanded) {
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    val progress = remember { Animatable(if (isExpanded) 1f else 0f) }
+    var dragOffsetX by remember { mutableFloatStateOf(0f) }
+    val swipeThreshold = 300f
+    val navBarDp = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
+    val thumbDrag = remember { Animatable(0f) }
+    val stepPx = with(density) { 352.dp.toPx() }
+
+    LaunchedEffect(isExpanded) {
+        progress.animateTo(if (isExpanded) 1f else 0f, tween(350))
+    }
+
+    var settledSongId by remember { mutableStateOf(song.id) }
+
+    LaunchedEffect(song.id) {
+        thumbDrag.snapTo(0f)
+        settledSongId = song.id
+    }
+    val glowTransition = rememberInfiniteTransition(label = "glow")
+    val glowX by glowTransition.animateFloat(
+        initialValue = 0.2f,
+        targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(5500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowX"
+    )
+    val glowY by glowTransition.animateFloat(
+        initialValue = 0.72f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(7500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowY"
+    )
+    val glowRadius by glowTransition.animateFloat(
+        initialValue = 0.55f,
+        targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowRadius"
+    )
+
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val maxH = maxHeight
+        val miniTotal = navBarDp + 116.dp
+        val travelPx = with(density) { (maxH - miniTotal).toPx() }.coerceAtLeast(1f)
+
+        val p = progress.value
+        val containerHeight = lerpDp(miniTotal, maxH, p)
+        val horizontalPad = lerpDp(12.dp, 0.dp, p)
+        val topPad = lerpDp(8.dp, 0.dp, p)
+        val bottomPad = lerpDp(navBarDp + 8.dp, 0.dp, p)
+        val corner = lerpDp(30.dp, 0.dp, p)
+        val cardColor = lerpColor(Color(0xFF420E0E), Color.Black, p)
+        val miniAlpha = (1f - p * 3f).coerceIn(0f, 1f)
+        val expandedAlpha = ((p - 0.3f) / 0.7f).coerceIn(0f, 1f)
+        val shape = RoundedCornerShape(corner)
+        val compact = maxH < 700.dp
+        val gapTop = if (compact) 8.dp else 32.dp
+        val gapThumbTop = if (compact) 12.dp else 48.dp
+        val gapThumbBottom = if (compact) 12.dp else 32.dp
+        val gapTitleSlider = if (compact) 16.dp else 54.dp
+        val gapTimeControls = if (compact) 16.dp else 64.dp
+        val gapBottom = if (compact) 12.dp else 32.dp
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(containerHeight)
+                .align(Alignment.BottomCenter)
+                .offset { IntOffset(dragOffsetX.roundToInt(), 0) }
+                .pointerInput(travelPx, isExpanded) {
+                    detectVerticalDragGestures(
+                        onDragEnd = {
+                            scope.launch {
+                                val target = if (isExpanded) progress.value > 0.75f else progress.value > 0.25f
+                                progress.animateTo(if (target) 1f else 0f, tween(250))
+                                if (target != isExpanded) onExpandChange(target)
+                            }
+                        },
+                        onDragCancel = {
+                            scope.launch {
+                                progress.animateTo(if (isExpanded) 1f else 0f, tween(250))
+                            }
+                        },
+                        onVerticalDrag = { change, dragAmount ->
+                            change.consume()
+                            scope.launch {
+                                progress.snapTo((progress.value - dragAmount / travelPx).coerceIn(0f, 1f))
+                            }
+                        }
+                    )
+                }
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragEnd = {
+                            if (progress.value == 0f && kotlin.math.abs(dragOffsetX) > swipeThreshold) onClose()
+                            dragOffsetX = 0f
+                        },
+                        onDragCancel = { dragOffsetX = 0f },
+                        onHorizontalDrag = { _, dragAmount ->
+                            if (progress.value == 0f) dragOffsetX += dragAmount
+                        }
+                    )
+                }
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White)
-                    .pointerInput(Unit) { detectTapGestures { } }
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 32.dp)
-                        .statusBarsPadding()
-                        .navigationBarsPadding()
-                ) {
-                    Spacer(modifier = Modifier.height(32.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_arrow_down),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clickable { onExpandChange(false) },
-                            colorFilter = ColorFilter.tint(Color(0xFF8E8D8D))
-                        )
-                        Spacer(modifier = Modifier.width(32.dp))
+                    .padding(start = horizontalPad, end = horizontalPad, top = topPad, bottom = bottomPad)
+                    .clip(shape)
+                    .background(cardColor, shape)
+                    .pointerInput(Unit) {
+                        detectTapGestures {
+                            if (progress.value < 0.5f) onExpandChange(true)
+                        }
                     }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
+            ) {
+                if (p > 0.02f) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(Color(0xFFF5F5F5))
+                            .wrapContentHeight(Alignment.Top, unbounded = true)
+                            .height(maxH)
+                            .graphicsLayer { alpha = expandedAlpha }
                     ) {
-                        val unknownThumbUrl = "http://192.168.100.79:5000/api/thumbnail/b875c19d-70c8-44cf-998a-bf9d06fe9533"
-                        val isUnknownThumb = song.thumbnailUrl == null || song.thumbnailUrl == unknownThumbUrl
-
-                        if (isUnknownThumb) {
-                            Image(
-                                painter = painterResource(id = R.drawable.ic_unknown_song_thumb),
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            AsyncImage(
-                                model = song.thumbnailUrl,
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop,
-                                error = painterResource(id = R.drawable.ic_unknown_song_thumb),
-                                placeholder = painterResource(id = R.drawable.music_splash_bg)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(32.dp))
-
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        MarqueeText(
-                            text = song.title,
-                            contentAlignment = Alignment.Center,
-                            style = MaterialTheme.typography.headlineMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Black,
-                                textAlign = TextAlign.Center
-                            )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black)
+                                .drawBehind {
+                                    val radius = size.width * glowRadius
+                                    val center = Offset(size.width * glowX, size.height * glowY)
+                                    drawCircle(
+                                        brush = Brush.radialGradient(
+                                            colors = listOf(
+                                                Color(0xFF8A0F1F),
+                                                Color(0xFF4A0A12),
+                                                Color.Transparent
+                                            ),
+                                            center = center,
+                                            radius = radius
+                                        ),
+                                        radius = radius,
+                                        center = center
+                                    )
+                                }
                         )
-                        Text(
-                            text = song.artist,
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                color = Color(0xFF999999),
-                                textAlign = TextAlign.Center
-                            )
-                        )
-                    }
 
-                    Spacer(modifier = Modifier.height(48.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 32.dp)
+                                .statusBarsPadding()
+                                .navigationBarsPadding(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Spacer(modifier = Modifier.height(gapTop))
 
-                    if (hasDuration) {
-                        Slider(
-                            value = currentPosition.toFloat(),
-                            onValueChange = { viewModel.seekTo(it.toLong()) },
-                            valueRange = 0f..song.durationMs.toFloat(),
-                            colors = SliderDefaults.colors(
-                                activeTrackColor = Color(0xFFC70025),
-                                inactiveTrackColor = Color(0xFFEEEEEE)
-                            ),
-                            thumb = {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_arrow_down),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clickable { onExpandChange(false) },
+                                    colorFilter = ColorFilter.tint(Color.White)
+                                )
+                                if (!song.genre.isNullOrBlank()) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.ic_genre),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .clickable {
+                                                if (progress.value == 1f) viewModel.openCurrentGenre()
+                                            },
+                                        colorFilter = ColorFilter.tint(Color.White)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(gapThumbTop))
+
+                            BoxWithConstraints(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                val thumbSide = minOf(maxWidth, maxHeight, 320.dp)
                                 Box(
                                     modifier = Modifier
-                                        .size(14.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(0xFFC70025))
-                                )
-                            },
-                            track = { sliderState ->
-                                SliderDefaults.Track(
-                                    sliderState = sliderState,
-                                    modifier = Modifier.height(4.dp),
-                                    colors = SliderDefaults.colors(
-                                        activeTrackColor = Color(0xFFC70025),
-                                        inactiveTrackColor = Color(0xFFEEEEEE)
-                                    ),
-                                    thumbTrackGapSize = 0.dp,
-                                    trackInsideCornerSize = 0.dp
-                                )
-                            }
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(Color(0xFFEEEEEE))
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = viewModel.formatTime(currentPosition),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = Color(0xFF999999)
-                        )
-                        Text(
-                            text = if (hasDuration) viewModel.formatTime(song.durationMs) else "--:--",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = Color(0xFF999999)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(48.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val rewindInteractionExpanded = remember { MutableInteractionSource() }
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_fast_rewind),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .indication(rewindInteractionExpanded, ripple(bounded = true))
-                                .clickable(
-                                    interactionSource = rewindInteractionExpanded,
-                                    indication = null,
-                                    enabled = hasPrevious
-                                ) { viewModel.skipPrevious() }
-                                .padding(8.dp),
-                            colorFilter = ColorFilter.tint(
-                                if (hasPrevious) Color(0xFFC70025) else Color(0xFFCCCCCC)
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.width(24.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .size(84.dp)
-                                .clip(CircleShape)
-                                .background(Color.White)
-                                .border(
-                                    width = 2.dp,
-                                    color = Color(0xFFC70025),
-                                    shape = CircleShape
-                                )
-                                .clickable { viewModel.togglePlayPause() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Image(
-                                painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
-                                contentDescription = null,
-                                modifier = Modifier.size(44.dp),
-                                colorFilter = ColorFilter.tint(Color(0xFFC70025))
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(24.dp))
-
-                        val forwardInteractionExpanded = remember { MutableInteractionSource() }
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_fast_forward),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .indication(forwardInteractionExpanded, ripple(bounded = true))
-                                .clickable(
-                                    interactionSource = forwardInteractionExpanded,
-                                    indication = null,
-                                    enabled = hasNext
-                                ) { viewModel.skipNext() }
-                                .padding(8.dp),
-                            colorFilter = ColorFilter.tint(
-                                if (hasNext) Color(0xFFC70025) else Color(0xFFCCCCCC)
-                            )
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(32.dp))
-                }
-            }
-        } else {
-            var dragOffsetX by remember { mutableFloatStateOf(0f) }
-            val swipeThreshold = 300f
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .offset { IntOffset(dragOffsetX.roundToInt(), 0) }
-                    .pointerInput(Unit) {
-                        detectHorizontalDragGestures(
-                            onDragEnd = {
-                                if (kotlin.math.abs(dragOffsetX) > swipeThreshold) {
-                                    onClose()
+                                        .size(thumbSide)
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null
+                                        ) {
+                                            if (progress.value == 1f) viewModel.openCurrentArtist()
+                                        }
+                                        .pointerInput(Unit) {
+                                            val tracker = VelocityTracker()
+                                            val minDistance = 40.dp.toPx()
+                                            val flickDistance = 16.dp.toPx()
+                                            val flickVelocity = 700f
+                                            detectHorizontalDragGestures(
+                                                onDragStart = { tracker.resetTracking() },
+                                                onDragEnd = {
+                                                    val vx = tracker.calculateVelocity().x
+                                                    scope.launch {
+                                                        val d = thumbDrag.value
+                                                        val goNext = viewModel.hasNext &&
+                                                                (d < -minDistance || (d < -flickDistance && vx < -flickVelocity))
+                                                        val goPrev = viewModel.hasPrevious &&
+                                                                (d > minDistance || (d > flickDistance && vx > flickVelocity))
+                                                        when {
+                                                            goNext -> {
+                                                                thumbDrag.animateTo(-stepPx, tween(200))
+                                                                viewModel.skipNext()
+                                                                delay(700)
+                                                                if (thumbDrag.value != 0f) thumbDrag.animateTo(0f, tween(200))
+                                                            }
+                                                            goPrev -> {
+                                                                thumbDrag.animateTo(stepPx, tween(200))
+                                                                viewModel.skipPrevious()
+                                                                delay(700)
+                                                                if (thumbDrag.value != 0f) thumbDrag.animateTo(0f, tween(200))
+                                                            }
+                                                            else -> thumbDrag.animateTo(0f, tween(250))
+                                                        }
+                                                    }
+                                                },
+                                                onDragCancel = {
+                                                    scope.launch { thumbDrag.animateTo(0f, tween(250)) }
+                                                },
+                                                onHorizontalDrag = { change, dragAmount ->
+                                                    tracker.addPosition(change.uptimeMillis, change.position)
+                                                    if (progress.value == 1f) {
+                                                        val raw = thumbDrag.value + dragAmount
+                                                        val blocked = (raw < 0f && !viewModel.hasNext) || (raw > 0f && !viewModel.hasPrevious)
+                                                        val delta = if (blocked) dragAmount * 0.3f else dragAmount
+                                                        scope.launch { thumbDrag.snapTo(thumbDrag.value + delta) }
+                                                    }
+                                                }
+                                            )
+                                        }
+                                ) {
+                                    listOf(-1, 0, 1).forEach { rel ->
+                                        val exists = when (rel) {
+                                            -1 -> viewModel.hasPrevious
+                                            1 -> viewModel.hasNext
+                                            else -> true
+                                        }
+                                        if (exists) {
+                                            AsyncImage(
+                                                model = if (rel == 0) song.thumbnailUrl else viewModel.thumbnailAt(rel),
+                                                contentDescription = null,
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .offset {
+                                                        val drag = if (settledSongId == song.id) thumbDrag.value else 0f
+                                                        IntOffset((drag + rel * stepPx).roundToInt(), 0)
+                                                    }
+                                                    .clip(RoundedCornerShape(20.dp))
+                                                    .background(Color(0xFF151515)),
+                                                contentScale = ContentScale.Crop,
+                                                error = painterResource(id = R.drawable.ic_unknown_song_thumb),
+                                                placeholder = painterResource(id = R.drawable.music_splash_bg),
+                                                fallback = painterResource(id = R.drawable.ic_unknown_song_thumb)
+                                            )
+                                        }
+                                    }
                                 }
-                                dragOffsetX = 0f
-                            },
-                            onDragCancel = {
-                                dragOffsetX = 0f
-                            },
-                            onHorizontalDrag = { _, dragAmount ->
-                                dragOffsetX += dragAmount
                             }
-                        )
-                    }
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .offset(y = (-6).dp)
-                        .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
-                        .background(Color(0xFFC70025))
-                        .height(20.dp)
-                )
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = Color.White,
-                            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-                        )
-                        .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
-                        .clickable { onExpandChange(true) }
-                        .padding(horizontal = 16.dp, vertical = 20.dp)
-                ) {
-                    Column {
+                            Spacer(modifier = Modifier.height(gapThumbBottom))
+
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                MarqueeText(
+                                    text = song.title,
+                                    contentAlignment = Alignment.Center,
+                                    style = MaterialTheme.typography.headlineMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        textAlign = TextAlign.Center
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = song.artist,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        color = Color(0xFFB3B3B3),
+                                        textAlign = TextAlign.Center
+                                    )
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(gapTitleSlider))
+
+                            if (hasDuration) {
+                                Slider(
+                                    value = currentPosition.toFloat(),
+                                    onValueChange = { viewModel.seekTo(it.toLong()) },
+                                    valueRange = 0f..song.durationMs.toFloat(),
+                                    colors = SliderDefaults.colors(
+                                        activeTrackColor = accentColor,
+                                        inactiveTrackColor = Color(0x4DFFFFFF)
+                                    ),
+                                    thumb = {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(14.dp)
+                                                .clip(CircleShape)
+                                                .background(accentColor)
+                                        )
+                                    },
+                                    track = { sliderState ->
+                                        SliderDefaults.Track(
+                                            sliderState = sliderState,
+                                            modifier = Modifier.height(4.dp),
+                                            colors = SliderDefaults.colors(
+                                                activeTrackColor = accentColor,
+                                                inactiveTrackColor = Color(0x4DFFFFFF)
+                                            ),
+                                            thumbTrackGapSize = 0.dp,
+                                            trackInsideCornerSize = 0.dp
+                                        )
+                                    }
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(4.dp)
+                                        .clip(RoundedCornerShape(2.dp))
+                                        .background(Color(0x4DFFFFFF))
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Start
+                            ) {
+                                val currentTimeFormatted = viewModel.formatTime(currentPosition)
+                                val totalTimeFormatted = if (hasDuration) viewModel.formatTime(song.durationMs) else "--:--"
+
+                                Text(
+                                    text = "$currentTimeFormatted / $totalTimeFormatted",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = Color(0xFFB3B3B3)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(gapTimeControls))
+
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(
+                                        id = if (isShuffled) R.drawable.ic_shuffle_music else R.drawable.ic_no_shuffle_music
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .align(Alignment.CenterStart)
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .clickable { viewModel.toggleShuffle() }
+                                        .padding(6.dp),
+                                    colorFilter = ColorFilter.tint(Color.White)
+                                )
+
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    val rewindInteractionExpanded = remember { MutableInteractionSource() }
+                                    Image(
+                                        painter = painterResource(id = R.drawable.ic_fast_rewind),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(CircleShape)
+                                            .indication(rewindInteractionExpanded, ripple(bounded = true))
+                                            .clickable(
+                                                interactionSource = rewindInteractionExpanded,
+                                                indication = null,
+                                                enabled = hasPrevious
+                                            ) { viewModel.skipPrevious() }
+                                            .padding(8.dp),
+                                        colorFilter = ColorFilter.tint(
+                                            if (hasPrevious) Color.White else Color(0x66FFFFFF)
+                                        )
+                                    )
+
+                                    Spacer(modifier = Modifier.width(24.dp))
+
+                                    Box(
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .clickable { viewModel.togglePlayPause() },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Image(
+                                            painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(if (isPlaying) 32.dp else 44.dp),
+                                            colorFilter = ColorFilter.tint(Color.White)
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.width(24.dp))
+
+                                    val forwardInteractionExpanded = remember { MutableInteractionSource() }
+                                    Image(
+                                        painter = painterResource(id = R.drawable.ic_fast_forward),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(CircleShape)
+                                            .indication(forwardInteractionExpanded, ripple(bounded = true))
+                                            .clickable(
+                                                interactionSource = forwardInteractionExpanded,
+                                                indication = null,
+                                                enabled = hasNext
+                                            ) { viewModel.skipNext() }
+                                            .padding(8.dp),
+                                        colorFilter = ColorFilter.tint(
+                                            if (hasNext) Color.White else Color(0x66FFFFFF)
+                                        )
+                                    )
+                                }
+
+                                Image(
+                                    painter = painterResource(
+                                        id = if (isFavorite) R.drawable.ic_fav_filled else R.drawable.ic_fav_outlined
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .align(Alignment.CenterEnd)
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .clickable { viewModel.toggleFavorite() }
+                                        .padding(6.dp),
+                                    colorFilter = ColorFilter.tint(
+                                        if (isFavorite) accentColor else Color.White
+                                    )
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(gapBottom))
+                        }
+                    }
+                }
+
+                if (p < 0.34f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp)
+                            .graphicsLayer { alpha = miniAlpha }
+                            .padding(start = 16.dp, end = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(end = 24.dp)
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                MarqueeText(
-                                    text = song.title,
-                                    style = MaterialTheme.typography.titleSmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.Black
+                                Box(
+                                    modifier = Modifier
+                                        .size(width = 52.dp, height = 56.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(Color(0xFF151515))
+                                ) {
+                                    AsyncImage(
+                                        model = song.thumbnailUrl,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop,
+                                        error = painterResource(id = R.drawable.ic_unknown_song_thumb),
+                                        placeholder = painterResource(id = R.drawable.music_splash_bg)
                                     )
-                                )
-                                Text(
-                                    text = song.artist,
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        color = Color(0xFF999999)
-                                    ),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
+                                }
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    MarqueeText(
+                                        text = song.title,
+                                        style = MaterialTheme.typography.titleSmall.copy(
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = song.artist,
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            color = Color(0xFFB3B3B3)
+                                        ),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                             }
+
+                            Spacer(modifier = Modifier.width(20.dp))
 
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 val rewindInteractionCollapsed = remember { MutableInteractionSource() }
                                 Image(
                                     painter = painterResource(id = R.drawable.ic_fast_rewind),
                                     contentDescription = null,
                                     modifier = Modifier
-                                        .size(28.dp)
-                                        .clip(CircleShape)
-                                        .indication(rewindInteractionCollapsed, ripple(bounded = true))
+                                        .size(24.dp)
+                                        .indication(rewindInteractionCollapsed, ripple(bounded = false))
                                         .clickable(
                                             interactionSource = rewindInteractionCollapsed,
                                             indication = null,
                                             enabled = hasPrevious
                                         ) { viewModel.skipPrevious() },
                                     colorFilter = ColorFilter.tint(
-                                        if (hasPrevious) Color(0xFFC70025) else Color(0xFFCCCCCC)
+                                        if (hasPrevious) Color.White else Color(0x66FFFFFF)
                                     )
                                 )
+
                                 Box(
                                     modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(Color.White)
-                                        .border(
-                                            width = 2.dp,
-                                            color = Color(0xFFC70025),
-                                            shape = CircleShape
-                                        )
+                                        .size(32.dp)
                                         .clickable { viewModel.togglePlayPause() },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Image(
                                         painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
                                         contentDescription = null,
-                                        modifier = Modifier.size(20.dp),
-                                        colorFilter = ColorFilter.tint(Color(0xFFC70025))
+                                        modifier = Modifier.size(if (isPlaying) 22.dp else 30.dp),
+                                        colorFilter = ColorFilter.tint(Color.White)
                                     )
                                 }
+
                                 val forwardInteractionCollapsed = remember { MutableInteractionSource() }
                                 Image(
                                     painter = painterResource(id = R.drawable.ic_fast_forward),
                                     contentDescription = null,
                                     modifier = Modifier
-                                        .size(28.dp)
-                                        .clip(CircleShape)
-                                        .indication(forwardInteractionCollapsed, ripple(bounded = true))
+                                        .size(24.dp)
+                                        .indication(forwardInteractionCollapsed, ripple(bounded = false))
                                         .clickable(
                                             interactionSource = forwardInteractionCollapsed,
                                             indication = null,
                                             enabled = hasNext
                                         ) { viewModel.skipNext() },
                                     colorFilter = ColorFilter.tint(
-                                        if (hasNext) Color(0xFFC70025) else Color(0xFFCCCCCC)
+                                        if (hasNext) Color.White else Color(0x66FFFFFF)
                                     )
                                 )
                             }
-                        }
 
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        if (hasDuration) {
-                            Slider(
-                                value = currentPosition.toFloat(),
-                                onValueChange = { viewModel.seekTo(it.toLong()) },
-                                valueRange = 0f..song.durationMs.toFloat(),
-                                colors = SliderDefaults.colors(
-                                    activeTrackColor = Color(0xFFC70025),
-                                    inactiveTrackColor = Color(0xFFEEEEEE)
-                                ),
-                                thumb = {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(14.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFFC70025))
-                                    )
-                                },
-                                track = { sliderState ->
-                                    SliderDefaults.Track(
-                                        sliderState = sliderState,
-                                        modifier = Modifier.height(4.dp),
-                                        colors = SliderDefaults.colors(
-                                            activeTrackColor = Color(0xFFC70025),
-                                            inactiveTrackColor = Color(0xFFEEEEEE)
-                                        ),
-                                        thumbTrackGapSize = 0.dp,
-                                        trackInsideCornerSize = 0.dp
-                                    )
-                                }
-                            )
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = viewModel.formatTime(currentPosition),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xFF999999)
-                                )
-                                Text(
-                                    text = viewModel.formatTime(song.durationMs),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xFF999999)
-                                )
-                            }
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(4.dp)
-                                    .clip(RoundedCornerShape(2.dp))
-                                    .background(Color(0xFFEEEEEE))
-                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                         }
                     }
                 }

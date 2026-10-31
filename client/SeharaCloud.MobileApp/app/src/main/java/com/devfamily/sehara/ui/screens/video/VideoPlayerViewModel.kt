@@ -3,6 +3,8 @@ package com.devfamily.sehara.ui.screens.video
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -53,9 +55,17 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
     private var currentQueueIndex: Int = -1
 
     val hasPrevious: Boolean get() = currentQueueIndex > 0
-    val hasNext: Boolean get() = currentQueueIndex < queue.size - 1
+    val hasNext: Boolean get() = currentQueueIndex >= 0 && currentQueueIndex < queue.size - 1
 
-    val exoPlayer: ExoPlayer = ExoPlayer.Builder(application).build()
+    val exoPlayer: ExoPlayer = ExoPlayer.Builder(application)
+        .setAudioAttributes(
+            AudioAttributes.Builder()
+                .setUsage(C.USAGE_MEDIA)
+                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                .build(),
+            true
+        )
+        .build()
 
     init {
         exoPlayer.addListener(object : Player.Listener {
@@ -97,19 +107,24 @@ class VideoPlayerViewModel(application: Application) : AndroidViewModel(applicat
         _hasPrevious.value = currentQueueIndex > 0
         _hasNext.value = currentQueueIndex < queue.size - 1
 
-        val categoryItems = queueList.filter { it.category == item.category }
+        val categoryItems = queueList.filter { (it.category as String?) == (item.category as String?) }
         _categoryQueue.value = categoryItems
+
+        val safeTitle = (item.title as String?)?.takeIf { it.isNotBlank() }
+            ?: (item.filename as String?)
+            ?: "Unknown Title"
+        val safeCategory = (item.category as String?)?.takeIf { it.isNotBlank() } ?: "other"
 
         _currentVideo.value = VideoUiModel(
             id = item.id,
-            title = if (item.title.isBlank()) item.filename else item.title,
-            category = item.category,
+            title = safeTitle,
+            category = safeCategory,
             durationMs = (item.durationSec ?: 0) * 1000L,
             thumbnailUrl = item.thumbnailUrl
         )
         _currentPosition.value = 0L
 
-        val streamUrl = "${RetrofitClient.BASE_URL}api/stream/${item.id}"
+        val streamUrl = "${RetrofitClient.BASE_URL.trimEnd('/')}/api/videos/${item.id}/stream"
         val mediaItem = MediaItem.fromUri(streamUrl)
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()

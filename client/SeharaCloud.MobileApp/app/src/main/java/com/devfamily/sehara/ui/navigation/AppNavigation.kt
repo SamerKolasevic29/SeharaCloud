@@ -1,7 +1,11 @@
 package com.devfamily.sehara.ui.navigation
 
 import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -11,31 +15,68 @@ import androidx.navigation.navArgument
 import com.devfamily.sehara.ui.screens.home.HomeScreen
 import com.devfamily.sehara.ui.screens.landing.LandingScreen
 import com.devfamily.sehara.ui.screens.music.ArtistScreen
+import com.devfamily.sehara.ui.screens.music.FavoriteScreen
 import com.devfamily.sehara.ui.screens.music.GenreScreen
 import com.devfamily.sehara.ui.screens.music.MusicFilter
 import com.devfamily.sehara.ui.screens.music.MusicHomeScreen
 import com.devfamily.sehara.ui.screens.music.MusicListScreen
 import com.devfamily.sehara.ui.screens.music.MusicPlayerViewModel
 import com.devfamily.sehara.ui.screens.video.VideoHomeScreen
-import com.devfamily.sehara.ui.screens.video.VideoCategoryScreen
-import com.devfamily.sehara.ui.screens.video.VideoCategory
 import com.devfamily.sehara.ui.screens.docs.DocumentsScreen
 import com.devfamily.sehara.ui.screens.docs.DocumentViewerScreen
-import com.devfamily.sehara.ui.screens.docs.DocsCategoryScreen
-import com.devfamily.sehara.ui.screens.docs.DocsCategory
-import com.devfamily.sehara.ui.screens.photo.PhotoScreen
-import com.devfamily.sehara.ui.screens.photo.PhotoViewerScreen
+import com.devfamily.sehara.ui.screens.photo.PhotoHostScreen
 import com.devfamily.sehara.ui.screens.photo.PhotoViewModel
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    openMusic: Boolean = false,
+    onOpenMusicHandled: () -> Unit = {}
+) {
     val navController = rememberNavController()
     val playerViewModel: MusicPlayerViewModel = viewModel()
     val photoViewModel: PhotoViewModel = viewModel()
+    val startRoute = remember { if (openMusic) Routes.Home.route else Routes.Landing.route }
+
+    LaunchedEffect(openMusic) {
+        if (openMusic) {
+            navController.navigate(Routes.Music.route) {
+                launchSingleTop = true
+            }
+            onOpenMusicHandled()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        playerViewModel.openArtist.collect { (id, name) ->
+            val entry = navController.currentBackStackEntry
+            val sameArtist = entry?.destination?.route == Routes.MusicList.route &&
+                    entry.arguments?.getString("type") == "artist" &&
+                    entry.arguments?.getString("id") == id
+            if (!sameArtist) {
+                navController.navigate(Routes.MusicList.createRoute("artist", id, name))
+            }
+        }
+    }
+    LaunchedEffect(Unit) {
+        playerViewModel.openGenre.collect { (id, name) ->
+            val entry = navController.currentBackStackEntry
+            val sameGenre = entry?.destination?.route == Routes.MusicList.route &&
+                    entry.arguments?.getString("type") == "genre" &&
+                    entry.arguments?.getString("id") == id
+            if (!sameGenre) {
+                navController.navigate(Routes.MusicList.createRoute("genre", id, name))
+            }
+        }
+    }
 
     NavHost(
         navController = navController,
-        startDestination = Routes.Landing.route
+        startDestination = startRoute,
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF161616))
     ) {
         composable(Routes.Landing.route) {
             LandingScreen(
@@ -63,79 +104,26 @@ fun AppNavigation() {
                 onBackClick = { navController.popBackStack() },
                 onArtistClick = { navController.navigate(Routes.Artist.route) },
                 onGenreClick = { navController.navigate(Routes.Genre.route) },
+                onFavoriteClick = { navController.navigate(Routes.Favorite.route) },
+                playerViewModel = playerViewModel
+            )
+        }
+
+        composable(Routes.Favorite.route) {
+            FavoriteScreen(
+                onBackClick = { navController.popBackStack() },
                 playerViewModel = playerViewModel
             )
         }
 
         composable(Routes.Video.route) {
             VideoHomeScreen(
-                onBackClick = { navController.popBackStack() },
-                onMovieClick = {
-                    navController.navigate(Routes.VideoCategory.createRoute("movie"))
-                },
-                onOtherClick = {
-                    navController.navigate(Routes.VideoCategory.createRoute("other"))
-                },
-                onDocumentaryClick = {
-                    navController.navigate(Routes.VideoCategory.createRoute("documentary"))
-                }
-            )
-        }
-
-        composable(
-            route = Routes.VideoCategory.route,
-            arguments = listOf(
-                navArgument("category") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val categoryArg = backStackEntry.arguments?.getString("category") ?: "movie"
-            val category = when (categoryArg) {
-                "documentary" -> VideoCategory.DOCUMENTARY
-                "other" -> VideoCategory.OTHER
-                else -> VideoCategory.MOVIE
-            }
-
-            VideoCategoryScreen(
-                category = category,
                 onBackClick = { navController.popBackStack() }
             )
         }
 
         composable(Routes.Docs.route) {
             DocumentsScreen(
-                onBackClick = { navController.popBackStack() },
-                onDocumentClick = { doc ->
-                    navController.navigate(
-                        Routes.DocumentViewer.createRoute(doc.id, doc.title ?: "Untitled")
-                    )
-                },
-                onDocumentsCategoryClick = {
-                    navController.navigate(Routes.DocsCategory.createRoute("documents"))
-                },
-                onBooksClick = {
-                    navController.navigate(Routes.DocsCategory.createRoute("books"))
-                },
-                onOthersClick = {
-                    navController.navigate(Routes.DocsCategory.createRoute("others"))
-                }
-            )
-        }
-
-        composable(
-            route = Routes.DocsCategory.route,
-            arguments = listOf(
-                navArgument("category") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val categoryArg = backStackEntry.arguments?.getString("category") ?: "documents"
-            val category = when (categoryArg) {
-                "books" -> DocsCategory.BOOKS
-                "others" -> DocsCategory.OTHERS
-                else -> DocsCategory.DOCUMENTS
-            }
-
-            DocsCategoryScreen(
-                category = category,
                 onBackClick = { navController.popBackStack() },
                 onDocumentClick = { doc ->
                     navController.navigate(
@@ -163,27 +151,9 @@ fun AppNavigation() {
         }
 
         composable(Routes.Photo.route) {
-            PhotoScreen(
+            PhotoHostScreen(
                 onBackClick = { navController.popBackStack() },
-                onPhotoClick = { index ->
-                    navController.navigate(Routes.PhotoViewer.createRoute(index))
-                },
                 viewModel = photoViewModel
-            )
-        }
-
-        composable(
-            route = Routes.PhotoViewer.route,
-            arguments = listOf(
-                navArgument("index") { type = NavType.IntType }
-            )
-        ) { backStackEntry ->
-            val index = backStackEntry.arguments?.getInt("index") ?: 0
-
-            PhotoViewerScreen(
-                viewModel = photoViewModel,
-                initialIndex = index,
-                onBackClick = { navController.popBackStack() }
             )
         }
 
@@ -230,6 +200,21 @@ fun AppNavigation() {
             MusicListScreen(
                 filter = filter,
                 onBackClick = { navController.popBackStack() },
+                onArtistClick = {
+                    navController.navigate(Routes.Artist.route) {
+                        popUpTo(Routes.Music.route)
+                    }
+                },
+                onGenreClick = {
+                    navController.navigate(Routes.Genre.route) {
+                        popUpTo(Routes.Music.route)
+                    }
+                },
+                onFavoriteClick = {
+                    navController.navigate(Routes.Favorite.route) {
+                        popUpTo(Routes.Music.route)
+                    }
+                },
                 playerViewModel = playerViewModel
             )
         }

@@ -1,0 +1,59 @@
+services:
+  seharacloud-db:
+    image: postgres:16-alpine
+    container_name: seharacloud-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-seharapassword}
+      POSTGRES_DB: ${POSTGRES_DB:-seharacloud}
+    volumes:
+      - ${DB_DATA_PATH:-./data/seharacloud/db-data}:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  seharacloud-api:
+    build:
+      context: ./server/api
+      dockerfile: server/SeharaCloud.Api/Dockerfile
+    container_name: seharacloud-api
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_URLS=http://+:5000
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=seharacloud-db;Port=5432;Database=${POSTGRES_DB:-seharacloud};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-seharapassword}
+    volumes:
+      - ${MEDIA_PATH:-./data/seharacloud/media}:/mnt/cloud
+    ports:
+      - "${API_PORT:-5000}:5000"
+    depends_on:
+      seharacloud-db:
+        condition: service_healthy
+    networks:
+      - internal
+
+  seharacloud-indexer:
+    build:
+      context: ./server/indexer
+      dockerfile: Dockerfile
+    container_name: seharacloud-indexer
+    restart: unless-stopped
+    environment:
+      - DB_CONNECTION_STRING=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-seharapassword}@seharacloud-db:5432/${POSTGRES_DB:-seharacloud}
+      - PHYSICAL_BASE_PATH=/data/seharacloud/media
+      - LOGICAL_BASE_PATH=/mnt/cloud
+    volumes:
+      - ${MEDIA_PATH:-./data/seharacloud/media}:/mnt/cloud
+    depends_on:
+      seharacloud-db:
+        condition: service_healthy
+    networks:
+      - internal
+
+networks:
+  internal:

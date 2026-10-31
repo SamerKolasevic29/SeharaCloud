@@ -1,17 +1,23 @@
 package com.devfamily.sehara.ui.screens.home
 
 import android.app.Activity
+import android.content.pm.ActivityInfo
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -19,6 +25,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,6 +33,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.devfamily.sehara.R
 import com.devfamily.sehara.ui.components.CategoryCard
 
@@ -39,108 +47,149 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
 
-    Box(modifier = modifier.fillMaxSize()) {
+    DisposableEffect(Unit) {
+        val activity = context as? Activity
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        onDispose {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFF201F1F))
+    ) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
-                modifier = Modifier.padding(start = 24.dp, top = 50.dp, end = 24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = Color(0xFF161616),
+                        shape = RoundedCornerShape(bottomStart = 25.dp, bottomEnd = 25.dp)
+                    )
+                    .statusBarsPadding()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.ic_logo),
                     contentDescription = null,
                     modifier = Modifier.size(60.dp),
-                    colorFilter = ColorFilter.tint(Color(0xFF3A1012))
                 )
-                Spacer(modifier = Modifier.width(32.dp))
+                Spacer(modifier = Modifier.width(16.dp))
                 Text(
                     text = "Sehara",
-                    color = Color(0xFF8E8D8D),
-                    style = MaterialTheme.typography.displayMedium
-                )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                CategoryCard(
-                    modifier = Modifier.weight(1f).padding(end = 4.dp),
-                    backgroundImage = R.drawable.home_video_card,
-                    label = "Video",
-                    onClick = onVideoClick,
-                    bottomStartContent = {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_video),
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            colorFilter = ColorFilter.tint(Color.White)
-                        )
-                    }
-                )
-                CategoryCard(
-                    modifier = Modifier.weight(1f).padding(start = 4.dp),
-                    backgroundImage = R.drawable.home_music_card,
-                    label = "Music",
-                    onClick = onMusicClick,
-                    bottomStartContent = {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_music),
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            colorFilter = ColorFilter.tint(Color.White)
-                        )
-                    }
+                    color = Color.White,
+                    style = MaterialTheme.typography.displayMedium.copy(letterSpacing = 0.sp)
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                CategoryCard(
-                    modifier = Modifier.weight(1f).padding(end = 4.dp),
-                    backgroundImage = R.drawable.home_photo_card,
-                    label = "Photo",
-                    onClick = onPhotoClick,
-                    bottomStartContent = {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_photo),
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            colorFilter = ColorFilter.tint(Color.White)
-                        )
-                    }
-                )
-                CategoryCard(
-                    modifier = Modifier.weight(1f).padding(start = 4.dp),
-                    backgroundImage = R.drawable.home_docs_card,
-                    label = "Docs",
-                    onClick = onDocsClick,
-                    bottomStartContent = {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_docs),
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            colorFilter = ColorFilter.tint(Color.White)
-                        )
-                    }
-                )
-            }
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CategoryCard(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .padding(end = 4.dp),
+                        backgroundImage = R.drawable.home_video_card,
+                        label = "Video",
+                        onClick = onVideoClick,
+                        bottomStartContent = {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_video),
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                colorFilter = ColorFilter.tint(Color.White)
+                            )
+                        }
+                    )
+                    CategoryCard(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .padding(start = 4.dp),
+                        backgroundImage = R.drawable.home_music_card,
+                        label = "Music",
+                        onClick = onMusicClick,
+                        bottomStartContent = {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_music),
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                colorFilter = ColorFilter.tint(Color.White)
+                            )
+                        }
+                    )
+                }
 
-            Spacer(modifier = Modifier.weight(1f))
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CategoryCard(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .padding(end = 4.dp),
+                        backgroundImage = R.drawable.home_photo_card,
+                        label = "Photo",
+                        onClick = onPhotoClick,
+                        bottomStartContent = {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_photo),
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                colorFilter = ColorFilter.tint(Color.White)
+                            )
+                        }
+                    )
+                    CategoryCard(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .padding(start = 4.dp),
+                        backgroundImage = R.drawable.home_docs_card,
+                        label = "Docs",
+                        onClick = onDocsClick,
+                        bottomStartContent = {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_docs),
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                colorFilter = ColorFilter.tint(Color.White)
+                            )
+                        }
+                    )
+                }
+            }
 
             Button(
                 onClick = { (context as? Activity)?.finish() },
                 modifier = Modifier
-                    .padding(bottom = 40.dp)
-                    .fillMaxWidth(0.4f)
-                    .height(46.dp)
-                    .align(Alignment.CenterHorizontally),
+                    .align(Alignment.CenterHorizontally)
+                    .navigationBarsPadding()
+                    .padding(top = 16.dp, bottom = 16.dp)
+                    .heightIn(min = 46.dp),
                 shape = RoundedCornerShape(150.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    horizontal = 32.dp,
+                    vertical = 8.dp
+                ),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9F001E))
             ) {
                 Image(
@@ -149,11 +198,13 @@ fun HomeScreen(
                     modifier = Modifier.size(24.dp),
                     colorFilter = ColorFilter.tint(Color.White)
                 )
-                Spacer(modifier = Modifier.width(24.dp))
+                Spacer(modifier = Modifier.width(16.dp))
                 Text(
                     text = "Exit",
                     color = Color.White,
-                    style = MaterialTheme.typography.titleSmall
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
         }

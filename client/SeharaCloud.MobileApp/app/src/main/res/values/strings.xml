@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Sehara</string>
+    <string name="shortcut_music_short">Music</string>
+    <string name="shortcut_music_long">Open Music</string>
 </resources>

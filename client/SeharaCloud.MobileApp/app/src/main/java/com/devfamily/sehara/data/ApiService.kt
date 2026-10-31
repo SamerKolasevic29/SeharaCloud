@@ -3,6 +3,7 @@ package com.devfamily.sehara.data
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Streaming
 
 interface ApiService {
 
@@ -17,6 +18,7 @@ interface ApiService {
 
     @GET("api/music/artists/{artist}")
     suspend fun getMusicByArtist(@Path("artist") artist: String): List<SongItem>
+
     @GET("api/music/genres")
     suspend fun getGenres(): List<GenreItem>
 
@@ -25,6 +27,7 @@ interface ApiService {
 
     @GET("api/music/search")
     suspend fun searchMusic(@Query("q") term: String): List<SongItem>
+
     @GET("api/music/artists/search")
     suspend fun searchArtists(@Query("q") term: String): List<ArtistItem>
 
@@ -34,21 +37,6 @@ interface ApiService {
     @GET("api/videos/recent")
     suspend fun getRecentVideos(): List<VideoItem>
 
-    @GET("api/videos/movies")
-    suspend fun getMovies(): List<VideoItem>
-
-    @GET("api/videos/movies/search")
-    suspend fun searchMovies(@Query("q") term: String): List<VideoItem>
-
-    @GET("api/videos/documentaries")
-    suspend fun getDocumentaries(): List<VideoItem>
-
-    @GET("api/videos/documentaries/search")
-    suspend fun searchDocumentaries(@Query("q") term: String): List<VideoItem>
-
-    @GET("api/videos/other")
-    suspend fun getOtherVideos(): List<VideoItem>
-
     @GET("api/videos/search")
     suspend fun searchVideos(@Query("q") term: String): List<VideoItem>
 
@@ -57,30 +45,28 @@ interface ApiService {
 
     @GET("api/images/{id}")
     suspend fun getImageById(@Path("id") id: String): PhotoItem
-    @GET("api/docs")
+
+    @GET("api/documents")
     suspend fun getDocuments(): List<DocumentItem>
 
-    @GET("api/docs/books")
-    suspend fun getBooks(): List<DocumentItem>
+    @GET("api/documents/recent")
+    suspend fun getRecentDocuments(): List<DocumentItem>
 
-    @GET("api/docs/books/search")
-    suspend fun searchBooks(@Query("q") term: String): List<DocumentItem>
-
-    @GET("api/docs/documents")
-    suspend fun getStandardDocuments(): List<DocumentItem>
-
-    @GET("api/docs/documents/search")
-    suspend fun searchStandardDocuments(@Query("q") term: String): List<DocumentItem>
-
-    @GET("api/docs/others")
-    suspend fun getOtherDocuments(): List<DocumentItem>
-
-    @GET("api/docs/search")
+    @GET("api/documents/search")
     suspend fun searchDocuments(@Query("q") term: String): List<DocumentItem>
 
-    @GET("api/stream/{id}")
-    suspend fun streamFile(@Path("id") id: String): retrofit2.Response<okhttp3.ResponseBody>
+    @Streaming
+    @GET("api/documents/{id}/stream")
+    suspend fun streamDocument(@Path("id") id: String): retrofit2.Response<okhttp3.ResponseBody>
 
-    @GET("api/thumbnails/{id}")
+    @Streaming
+    @GET("api/images/{id}/stream")
+    suspend fun streamImage(@Path("id") id: String): retrofit2.Response<okhttp3.ResponseBody>
+
+    @Streaming
+    @GET("api/music/{id}/stream")
+    suspend fun streamMusic(@Path("id") id: String): retrofit2.Response<okhttp3.ResponseBody>
+
+    @GET("api/thumbnail/{id}")
     suspend fun getThumbnail(@Path("id") id: String): retrofit2.Response<okhttp3.ResponseBody>
 }

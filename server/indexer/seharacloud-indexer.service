@@ -1,0 +1,22 @@
+# READ README FOR FULL INSTRUCTIONS
+
+[Unit]
+Description=SeharaCloud C++ Media Indexer Daemon
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/seharacloud-indexer
+Restart=always
+RestartSec=5
+
+Environment="DB_CONNECTION_STRING=postgresql://postgres:TvojaJakaLozinka123@127.0.0.1:5432/seharacloud"
+Environment="PHYSICAL_BASE_PATH=**physical**"
+Environment="LOGICAL_BASE_PATH=**logical**"
+
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

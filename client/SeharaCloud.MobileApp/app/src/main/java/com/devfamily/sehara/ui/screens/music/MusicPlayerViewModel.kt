@@ -90,24 +90,10 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
                 }
 
                 override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                    val index = mediaController.currentMediaItemIndex
-                    if (index in queue.indices) {
-                        currentQueueIndex = index
-                        val item = queue[index]
-                        _currentSong.value = SongUiModel(
-                            id = item.id,
-                            title = item.title ?: item.filename,
-                            artist = item.artist ?: "Unknown Artist",
-                            durationMs = (item.durationSec ?: 0) * 1000L,
-                            thumbnailUrl = item.thumbnailUrl,
-                            genre = item.genre
-                        )
-                        _currentPosition.value = 0L
-                        _hasPrevious.value = index > 0
-                        _hasNext.value = index < queue.size - 1
-                    }
+                    restorePlayerState(mediaController)
                 }
             })
+            restorePlayerState(mediaController)
             pendingLoad?.invoke()
             pendingLoad = null
         }
@@ -125,6 +111,50 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
                 }
             }
         }
+    }
+
+    private fun restorePlayerState(player: MediaController) {
+        queue = (0 until player.mediaItemCount).map { index ->
+            val mediaItem = player.getMediaItemAt(index)
+            val metadata = mediaItem.mediaMetadata
+            val title = metadata.title?.toString()
+            val mediaId = mediaItem.mediaId.ifBlank {
+                val pathSegments = mediaItem.localConfiguration?.uri?.pathSegments.orEmpty()
+                val streamIndex = pathSegments.indexOfLast { it == "stream" }
+                pathSegments.getOrNull(streamIndex - 1).orEmpty()
+            }
+
+            SongItem(
+                id = mediaId,
+                filename = title ?: mediaId,
+                thumbnailUrl = metadata.artworkUri?.toString(),
+                title = title,
+                artist = metadata.artist?.toString(),
+                album = metadata.albumTitle?.toString(),
+                genre = metadata.genre?.toString(),
+                durationSec = null
+            )
+        }
+
+        currentQueueIndex = player.currentMediaItemIndex.takeIf { it in queue.indices } ?: -1
+        val item = queue.getOrNull(currentQueueIndex)
+
+        _currentSong.value = item?.let {
+            SongUiModel(
+                id = it.id,
+                title = it.title ?: it.filename,
+                artist = it.artist ?: "Unknown Artist",
+                durationMs = player.duration.takeIf { duration -> duration > 0L } ?: 0L,
+                thumbnailUrl = it.thumbnailUrl,
+                genre = it.genre
+            )
+        } ?: SongUiModel()
+
+        _currentPosition.value = player.currentPosition
+        _isPlaying.value = player.isPlaying
+        _isShuffled.value = player.shuffleModeEnabled
+        _hasPrevious.value = currentQueueIndex > 0
+        _hasNext.value = currentQueueIndex in queue.indices && currentQueueIndex < queue.lastIndex
     }
 
     fun loadSong(
@@ -166,10 +196,12 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         val metadata = MediaMetadata.Builder()
             .setTitle(title)
             .setArtist(artist)
+            .setGenre(genre)
             .setArtworkUri(thumbnailUrl?.let { android.net.Uri.parse(it) })
             .build()
 
         val mediaItem = MediaItem.Builder()
+            .setMediaId(songId)
             .setUri(streamUrl)
             .setMediaMetadata(metadata)
             .build()
@@ -184,10 +216,13 @@ class MusicPlayerViewModel(application: Application) : AndroidViewModel(applicat
         val metadata = MediaMetadata.Builder()
             .setTitle(song.title ?: song.filename)
             .setArtist(song.artist ?: "Unknown Artist")
+            .setAlbumTitle(song.album)
+            .setGenre(song.genre)
             .setArtworkUri(song.thumbnailUrl?.let { android.net.Uri.parse(it) })
             .build()
 
         return MediaItem.Builder()
+            .setMediaId(song.id)
             .setUri("$baseUrl/api/music/${song.id}/stream")
             .setMediaMetadata(metadata)
             .build()

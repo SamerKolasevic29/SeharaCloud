@@ -32,7 +32,7 @@ builder.Services.AddScoped<IMusicService, MusicService>();
 builder.Services.AddScoped<IVideoService, VideoService>();
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IDocumentService, DocumentService>();
-// builder.Services.AddScoped<IThumbnailService, ThumbnailService>(); // Uncomment if ThumbnailService is implemented
+builder.Services.AddScoped<IThumbnailService, ThumbnailService>();
 
 // ============================================================
 // 4. CONTROLLERS & SWAGGER / API EXPLORER

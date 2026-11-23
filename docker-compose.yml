@@ -19,8 +19,8 @@ services:
 
   seharacloud-api:
     build:
-      context: ./server/api
-      dockerfile: server/SeharaCloud.Api/Dockerfile
+      context: .
+      dockerfile: server/api/SeharaCloud.api/Dockerfile
     container_name: seharacloud-api
     restart: unless-stopped
     environment:

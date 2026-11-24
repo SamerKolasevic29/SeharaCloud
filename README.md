@@ -44,8 +44,8 @@ flowchart LR
 
 ### Typical file lifecycle:
 
-1. **File arrives in `staging/**` (scp, rsync, or yt-dlp downloads mp3 directly there).
-2. **Watcher captures `IN_CLOSE_WRITE` / `IN_MOVED_TO**` (i.e., only after the write operation is complete — see the atomic write note below).
+1. **File arrives in `staging/`** (scp, rsync, or yt-dlp downloads mp3 directly there).
+2. **Watcher captures `IN_CLOSE_WRITE` / `IN_MOVED_TO`** (i.e., only after the write operation is complete — see the atomic write note below).
 3. **FileProcessor calculates SHA-256**, checks for duplicates (`fn_find_duplicate`), extracts metadata based on file type, and generates a `.webp` thumbnail if needed.
 4. **File is moved from `staging/` to the final physical directory**; the logical path (`/mnt/cloud/...`) is written to the database, not the physical one.
 5. **API reads from the database** and serves files from its mount point (same host folder, different path inside the container — see below).
@@ -122,13 +122,10 @@ INSERT INTO genres (name, thumbnail_id2)
 VALUES ('Rock', 'your-thumbnail-uuid-here');
 ```
 
-
 * List your genres to get their IDs for later use:
 ```sql
 SELECT id, name FROM genres;
 ```
-
-
 
 ### 2. Setting up Artists & Thumbnails
 
@@ -152,15 +149,11 @@ INSERT INTO artists (name, genre_id, thumbnail_id2, thumbnail_id3)
 VALUES ('Smoke Mardeljano', 'genre-uuid-here', 'artist-thumb-uuid', 'artist2-thumb-uuid');
 ```
 
-
-
 ### 3. Triggering the Indexer
 
 The indexer relies heavily on filename parsing.
 
 * Rename your audio files exactly to this format: `Artist - SongName.mp3` (or `.wav`).
-
-
 * Drop them into the `staging/` directory. The indexer will read the filename, match the artist in the database, and link the song. If the filename doesn't match this structure, it falls back to "Unknown Artist".
 
 ---
@@ -176,7 +169,7 @@ The indexer relies heavily on filename parsing.
 | `ASPNETCORE_ENVIRONMENT` | `Production` |
 | `API_PORT` | Port the API listens on inside the container |
 | `API_BIND_ADDRESS` | Host interface (`127.0.0.1` = local only, behind reverse proxy) |
-| `API_BASE_URL` | Public API URL (e.g., `[https://sehara.cloud.com](https://sehara.cloud.com)`) — used for `ThumbnailUrl` and similar absolute links |
+| `API_BASE_URL` | Public API URL (e.g., `https://sehara.cloud.com`) — used for `ThumbnailUrl` and similar absolute links |
 | `INDEXER_PHYSICAL_BASE_PATH` | Path as seen by the indexer container |
 | `INDEXER_LOGICAL_BASE_PATH` | Path as seen by the API container (`/mnt/cloud`) — this is written to the DB as `path` |
 | `HOST_MEDIA_PATH` | Actual path on the server where files reside |
@@ -234,7 +227,7 @@ Full DDL is located in `database/schema.sql` — this is just an overview.
 
 **Useful functions:**
 
-* `fn_resolve_artist(name)` — exact match $\rightarrow$ fuzzy match (trigram) $\rightarrow$ fallback to "Unknown Artist"
+* `fn_resolve_artist(name)` — exact match → fuzzy match (trigram) → fallback to "Unknown Artist"
 * `fn_find_duplicate(hash)` — searches hash across all 4 tables
 * View `v_artists_full` — artist + all three thumbnails + genre, joined
 
@@ -768,5 +761,3 @@ cd client/SeharaCloud.MobileApp
 ```
 
 The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
-
----

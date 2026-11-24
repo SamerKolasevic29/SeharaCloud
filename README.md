@@ -21,6 +21,7 @@ This README covers the backend portion (indexer + API + database + deployment) a
 * Indexer — Expectations and Inner Workings
 * Database
 * API
+* Load testing (k6)
 * Known Issues / Roadmap
 * For Frontend Developers
 
@@ -261,6 +262,29 @@ Full contract (including upcoming modules) is in `docs/ApiContract.md` — below
 Short queries (< 2 characters) on search endpoints throw a validation error; `/stream` returns a not-found error if the ID does not exist in the database or if the file is physically missing from disk (`File.Exists` is checked prior to streaming). Exact HTTP status codes mapped by middleware — check `Middleware/` (not covered in this README).
 
 Video/Document/Image endpoints are not yet confirmed in code — once completed, add them to this table following the same format.
+
+---
+
+## Load Testing (k6)
+
+Read-only load and stress testing was executed with **k6** directly against the production ASP.NET Core (.NET 9) API and PostgreSQL 16 instance (`http://127.0.0.1:5000`) over a 140-second multi-stage profile (ramp-up to **60 concurrent VUs**, 200 ms think time) using real records from the existing database (`1,151` tracks, `91` artists, `7` genres, `4` videos, `43` images, `1` document, and `189` thumbnails).
+
+The test script (`tests/k6/loadtest.js`) and raw export (`tests/k6/summary-2026-11-24.json`) cover all modules from `docs/ApiContract.md`: listings (`40%`), ID lookups (`20%`), `ILIKE` / `pg_trgm` search (`20%`), and `.webp` thumbnails + HTTP `206` Range streaming (`20%`).
+
+| Metric | Value | Notes |
+| --- | --- | --- |
+| **Throughput** | **122.64 req/s** | `17,210` total HTTP requests in 140s (`529 MB` transferred) |
+| **p50 (Median)** | **3.05 ms** | Average response time: `4.74 ms` |
+| **p90** | **8.57 ms** | — |
+| **p95** | **14.46 ms** | Threshold: `< 500 ms` (passed) |
+| **p99** | **20.93 ms** | Max single request latency: `85.16 ms` |
+| **Error Rate** | **0.00%** | `17,204 / 17,204` checks passed (`0` failed requests) |
+
+To reproduce the test against a running local instance:
+
+```bash
+k6 run -e BASE_URL=[http://127.0.0.1:5000](http://127.0.0.1:5000) tests/k6/loadtest.js
+```
 
 ---
 
